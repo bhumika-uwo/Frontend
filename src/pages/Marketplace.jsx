@@ -52,7 +52,7 @@ const Marketplace = () => {
   const user = getUserData("user")
   const [agentId, setAgentId] = useState("")
   useEffect(() => {
-    setLoading(true)
+    // setLoading(true)
     console.log(subToggle);
 
 
@@ -70,7 +70,7 @@ const Marketplace = () => {
       console.log(err);
     })
 
-  }, [])
+  }, [agentId])
 
 
   const toggleBuy = (id) => {

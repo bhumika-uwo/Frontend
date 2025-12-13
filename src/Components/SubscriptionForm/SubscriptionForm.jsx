@@ -6,61 +6,76 @@ import { toggleState } from '../../userStore/userData';
 import { motion } from 'motion/react';
 import { apis } from '../../types';
 import { getUserData } from '../../userStore/userData';
+import axios from 'axios';
 
 const SubscriptionForm = ({ id }) => {
   const [subscripTgl, setSubscripTgl] = useRecoilState(toggleState)
   const user = getUserData("user")
+console.log(id);
 
-  function buyAgent() {
-    // axios.post(`${apis.buyAgent}/${id}`, { userId: user.id }).then((res) => {
-    //   setSubscripTgl({ ...subscripTgl, subscripPgTgl: false, notify: true })
-    //   console.log(res);
-    // }).catch((err) => {
-    //   console.log(err);
-    // })
-    console.log(id);
-    
-  }
+
+  function buyAgent(e) {
+  e.preventDefault();
+
+  axios.post(`${apis.buyAgent}/${id}`, { userId: user.id })
+    .then((res) => {
+      setSubscripTgl({ ...subscripTgl, subscripPgTgl: false, notify: true });
+      console.log(res);
+    })
+    .catch(console.log);
+}
+
 
   return (
     <div className='fixed z-99 bg-black bg-opacity-10 bottom-0 right-0 left-0 top-0  flex justify-center items-center'>
       <StyledWrapper  >
-        <motion.form initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="plan-chooser ">
-          <div className='flex justify-end items-center' > <X onClick={() => { setSubscripTgl({ ...subscripTgl, subscripPgTgl: false }) }} /></div>
-          <div className="header">
-            <span className="title">Choose your plan</span>
-            <p className="desc">Amet minim mollit non deserunt ullamco est sit .</p>
-          </div>
-          <div className="plan-option">
-            <input defaultValue="free" id="free" name="plan" type="radio" />
-            <label htmlFor="free">
-              <div className="plan-info">
-                <span className="plan-cost">₹0</span>
-                <span className="plan-name">Try Free</span>
-              </div>
-            </label>
-          </div>
-          <div className="plan-option">
-            <input defaultValue="monthly" id="monthly" name="plan" type="radio" />
-            <label htmlFor="monthly">
-              <div className="plan-info">
-                <span className="plan-cost">₹49/month</span>
-                <span className="plan-name">Monthly plan</span>
-              </div>
-            </label>
-          </div>
-          <div className="plan-option">
-            <input defaultValue="annual" id="annual" name="plan" type="radio" />
-            <label htmlFor="annual">
-              <div className="plan-info">
-                <span className="plan-cost">₹19/month</span>
-                <span className="plan-name">₹228 billed in a year</span>
-              </div>
-              <span className="reduction"> Save 20% </span>
-            </label>
-          </div>
-          <button onClick={buyAgent} title className="choose-btn"> Start </button>
-        </motion.form>
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}>
+          <form className="plan-chooser ">
+            <div className='flex justify-end items-center' > <X onClick={() => { setSubscripTgl({ ...subscripTgl, subscripPgTgl: false }) }} /></div>
+            <div className="header">
+              <span className="title">Choose your plan</span>
+              <p className="desc">Amet minim mollit non deserunt ullamco est sit .</p>
+            </div>
+            <div className="plan-option">
+              <input defaultValue="free" id="free" name="plan" type="radio" />
+              <label htmlFor="free">
+                <div className="plan-info">
+                  <span className="plan-cost">₹0</span>
+                  <span className="plan-name">Try Free</span>
+                </div>
+              </label>
+            </div>
+            <div className="plan-option">
+              <input defaultValue="monthly" id="monthly" name="plan" type="radio" />
+              <label htmlFor="monthly">
+                <div className="plan-info">
+                  <span className="plan-cost">₹49/month</span>
+                  <span className="plan-name">Monthly plan</span>
+                </div>
+              </label>
+            </div>
+            <div className="plan-option">
+              <input defaultValue="annual" id="annual" name="plan" type="radio" />
+              <label htmlFor="annual">
+                <div className="plan-info">
+                  <span className="plan-cost">₹19/month</span>
+                  <span className="plan-name">₹228 billed in a year</span>
+                </div>
+                <span className="reduction"> Save 20% </span>
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={buyAgent}
+              className="choose-btn"
+              title="Start subscription"
+            >
+              Start
+            </button>
+
+          </form>
+        </motion.div>
+
       </StyledWrapper>
     </div>
 

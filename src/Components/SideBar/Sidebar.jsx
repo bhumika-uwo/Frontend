@@ -45,7 +45,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         />
       )}
       {notifiyTgl.notify && <div className='fixed w-full z-10 flex justify-center items-center mt-5 ml-6'>
-        <NotificationBar msg={"every thing is done"} />
+        <NotificationBar msg={"Successfully Owned"} />
       </div>}
 
       {/* Sidebar */}
