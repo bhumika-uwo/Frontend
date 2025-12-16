@@ -2,7 +2,9 @@ import { } from "../types"; // remove if unused
 import { getUserData } from "../userStore/userData";
 const userId = getUserData("user")?.id
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://ai-mall-backend.onrender.com/api"
+// const API_BASE_URL = "http://localhost:5000/api"
+
 
 export const chatStorageService = {
   
