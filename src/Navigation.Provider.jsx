@@ -6,7 +6,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import VerificationForm from './pages/VerificationForm';
 import Chat from './pages/Chat';
-import Sidebar from './components/SideBar/Sidebar.jsx';
+import Sidebar from './Components/SideBar/Sidebar.jsx';
 import Marketplace from './pages/Marketplace';
 import MyAgents from './pages/MyAgents';
 import DashboardOverview from './pages/DashboardOverview';
