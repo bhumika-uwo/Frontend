@@ -29,7 +29,7 @@ const Signup = () => {
       navigate(AppRoute.E_Verification);
     }).catch((err) => {
       console.log(err);
-      // setError(err.response.data.error)
+      setError(err.response.data.error)
     }).finally(() => {
       setIsLoading(false)
 

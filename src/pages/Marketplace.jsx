@@ -182,11 +182,11 @@ const Marketplace = () => {
             >
               {userAgent.some((ag) => agent._id == ag._id) ? (
                 <>
-                  <Check className="w-4 h-4" /> Owned
+                  <Check className="w-4 h-4" /> Subscribed
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" /> Buy
+                  <Download className="w-4 h-4" /> Subscribe
                 </>
               )}
             </button>

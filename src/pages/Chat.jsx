@@ -187,7 +187,7 @@ const Chat = () => {
                   <Bot className="w-3 h-3 text-primary" />
                 </div>
                 <span className="text-sm font-medium truncate max-w-[100px] sm:max-w-none">
-                  General Assistant
+                  AISA <sup>TM</sup>
                 </span>
                 <ChevronDown className="w-3 h-3 text-subtext" />
               </div>
