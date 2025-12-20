@@ -81,8 +81,8 @@ const MyAgents = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-maintext mb-2">My Custom Agents</h1>
-                    <p className="text-sm md:text-base text-subtext">Create and manage your personalized AI assistants.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-maintext mb-2">My  Agents</h1>
+                    <p className="text-sm md:text-base text-subtext">Manage your personalized AI assistants.</p>
                 </div>
 
                 <button
