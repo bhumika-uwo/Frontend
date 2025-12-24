@@ -8,7 +8,8 @@ import {
   Settings,
   LogOut,
   Zap,
-  X
+  X,
+  Video
 } from 'lucide-react';
 import { apis, AppRoute } from '../../types';
 import NotificationBar from '../NotificationBar/NotificationBar.jsx';
@@ -111,6 +112,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           <NavLink to={AppRoute.MARKETPLACE} className={navItemClass} onClick={onClose}>
             <ShoppingBag className="w-5 h-5" />
             <span>Marketplace</span>
+          </NavLink>
+
+          <NavLink to={AppRoute.LIVE_DEMOS} className={navItemClass} onClick={onClose}>
+            <Video className="w-5 h-5" />
+            <span>Live Demos</span>
           </NavLink>
 
           {/* <NavLink to="/dashboard/automations" className={navItemClass} onClick={onClose}>

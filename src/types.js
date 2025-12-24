@@ -49,10 +49,11 @@ export const AppRoute = {
   DASHBOARD: "/dashboard",
   MARKETPLACE: "/dashboard/marketplace",
   MY_AGENTS: "/dashboard/agents",
+  LIVE_DEMOS: "/dashboard/live-demos",
   SETTINGS: "/dashboard/settings",
   agentSoon: "/agentsoon",
 };
-export const API="https://ai-mall-backend.onrender.com/api"
+export const API = "https://ai-mall-backend.onrender.com/api"
 // export const API = "http://localhost:5000/api"
 export const apis = {
   emailVerificationApi: `${API}/email_varification`,

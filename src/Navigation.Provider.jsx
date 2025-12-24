@@ -12,6 +12,10 @@ import MyAgents from './pages/MyAgents';
 import DashboardOverview from './pages/DashboardOverview';
 import Automations from './pages/Automations';
 import Admin from './pages/Admin';
+import { lazy, Suspense } from 'react';
+
+const LiveDemoPage = lazy(() => import('./pages/LiveDemoPage'));
+const Loader = lazy(() => import('./Components/Loader/Loader')); // Assuming there's a loader
 
 import { AppRoute } from './types';
 import { Menu } from 'lucide-react';
@@ -19,9 +23,9 @@ import AiBiz from './agents/AIBIZ/AiBiz.jsx';
 import ComingSoon from './Components/CommingSoon/CommingSoon.jsx';
 
 
-const AuthenticatRoute=({childern})=>{
-  
-  
+const AuthenticatRoute = ({ childern }) => {
+
+
 }
 // ------------------------------
 // Dashboard Layout (Auth pages)
@@ -91,8 +95,8 @@ const NavigateProvider = () => {
         <Route path={AppRoute.LOGIN} element={<Login />} />
         <Route path={AppRoute.SIGNUP} element={<Signup />} />
         <Route path={AppRoute.E_Verification} element={<VerificationForm />} />
-        <Route path="/agentsoon" element={<ComingSoon/>}></Route>
-      {/* agents */}
+        <Route path="/agentsoon" element={<ComingSoon />}></Route>
+        {/* agents */}
         <Route path='/agents/aibiz' element={<AiBiz />}></Route>
         {/* Dashboard (Protected) */}
         <Route path={AppRoute.DASHBOARD} element={<DashboardLayout />}>
@@ -102,6 +106,11 @@ const NavigateProvider = () => {
 
           <Route path="overview" element={<DashboardOverview />} />
           <Route path="marketplace" element={<Marketplace />} />
+          <Route path="live-demos" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><p className="text-subtext">Loading...</p></div>}>
+              <LiveDemoPage />
+            </Suspense>
+          } />
           <Route path="agents" element={<MyAgents />} />
           <Route path="automations" element={<Automations />} />
           <Route path="admin" element={<Admin />} />
