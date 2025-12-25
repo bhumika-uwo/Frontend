@@ -8,40 +8,7 @@ import { useRecoilState } from 'recoil';
 import { AnimatePresence } from 'motion/react';
 import NotificationBar from '../Components/NotificationBar/NotificationBar';
 
-const MOCK_AGENTS = [
-  {
-    id: '1',
-    name: 'AIBIZ – AI Business Assistant',
-    description: 'AIBIZ helps you instantly create business plans, pitch decks, strategies, and market analysis based on your product or startup idea.Just enter your business info and get professional‑ready documents in minutes.',
-    avatar: '/AIBIZ.jpeg',
-    category: 'Business',
-    installed: true,
-    instructions: '',
-    URL: "http://localhost:5174/"
-  },
-  {
-    id: '2',
-    name: 'Content Writer',
-    description: 'AI Content Writer helps you instantly generate professional marketing content for social media, blogs, ads, and scripts—based on a simple topic.Just enter a topic and platform, and get ready‑to‑publish content in seconds.',
-    avatar: 'https://picsum.photos/200/200?random=2',
-    category: 'Content',
-    installed: false,
-    instructions: '',
-    URL: "http://localhost:5174/"
 
-  },
-  {
-    id: '3',
-    name: 'AISA – AI Smart Assistant',
-    description: 'AISA is your intelligent AI assistant that helps you generate answers, ideas, summaries, and explanations instantly—just by asking a question. It understands context, follows instructions, and responds like a real professional helper.',
-    avatar: 'https://picsum.photos/200/200?random=3',
-    category: 'productivity',
-    installed: false,
-    instructions: '',
-    URL: "http://localhost:5174/"
-
-  }
-];
 
 const Marketplace = () => {
   const [agents, setAgents] = useState([]);
@@ -51,6 +18,8 @@ const Marketplace = () => {
   const [subToggle, setSubToggle] = useRecoilState(toggleState)
   const user = getUserData("user")
   const [agentId, setAgentId] = useState("")
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     // setLoading(true)
     console.log(subToggle);
@@ -76,20 +45,14 @@ const Marketplace = () => {
   const toggleBuy = (id) => {
     setSubToggle({ ...subToggle, subscripPgTgl: true })
     setAgentId(id)
-    // axios.post(`${apis.buyAgent}/${id}`, { userId: user.id }).then((res) => {
-    //   console.log(res);
-    // }).catch((err) => {
-    //   console.log(err);
-    // })
-    // setAgents(prev =>
-    //   prev.map(agent =>
-    //     agent.id === id ? { ...agent, installed: !agent.installed } : agent
-    //   )
-    // );
   };
 
-  const filteredAgents =
-    filter === 'all' ? agents : agents.filter(a => a.category === filter);
+  const filteredAgents = agents.filter(agent => {
+    const matchesCategory = filter === 'all' || agent.category === filter;
+    const matchesSearch = agent.agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      agent.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const categories = ['all', "Business OS",
     "Data & Intelligence",
@@ -100,11 +63,11 @@ const Marketplace = () => {
 
   return (
     <div className="p-4 md:p-8 h-full overflow-y-auto bg-secondary">
+
       <AnimatePresence>
         {subToggle.subscripPgTgl &&
           <SubscriptionForm id={agentId} />
         }
-
       </AnimatePresence>
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -123,6 +86,8 @@ const Marketplace = () => {
           <input
             type="text"
             placeholder="Search agents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-surface border border-border rounded-xl py-2.5 pl-10 pr-4 text-maintext focus:outline-none focus:border-primary transition-colors shadow-sm"
           />
         </div>
@@ -175,8 +140,9 @@ const Marketplace = () => {
             {/* Install Button */}
             <button
               onClick={() => toggleBuy(agent._id)}
+              disabled={userAgent.some((ag) => agent._id == ag._id)}
               className={`w-full py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userAgent.some((ag) => agent._id == ag._id)
-                ? 'bg-blue-50 text-primary border border-blue-100'
+                ? 'bg-blue-50 text-subtext border border-blue-100 cursor-not-allowed opacity-70'
                 : 'bg-primary text-white hover:opacity-90 shadow-lg shadow-primary/20'
                 }`}
             >

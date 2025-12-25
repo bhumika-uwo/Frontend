@@ -22,7 +22,7 @@ const Chat = () => {
       const data = await chatStorageService.getSessions();
       setSessions(data);
       console.log(data);
-      
+
     };
     loadSessions();
   }, [messages]);
@@ -103,6 +103,18 @@ const Chat = () => {
     await chatStorageService.saveMessage(activeSessionId, modelMsg);
   };
 
+  const handleDeleteSession = async (e, id) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this chat history?')) {
+      await chatStorageService.deleteSession(id);
+      const data = await chatStorageService.getSessions();
+      setSessions(data);
+      if (currentSessionId === id) {
+        navigate('/dashboard/chat/new');
+      }
+    }
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -145,21 +157,29 @@ const Chat = () => {
           </h3>
 
           {sessions.map((session) => (
-            <button
-              key={session.sessionId}
-              onClick={() => navigate(`/dashboard/chat/${session.sessionId}`)}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors truncate
-                ${currentSessionId === session.sessionId
-                  ? 'bg-white text-primary shadow-sm border border-border'
-                  : 'text-subtext hover:bg-white hover:text-maintext'
-                }
-              `}
-            >
-              <div className="font-medium truncate">{session.title}</div>
-              <div className="text-[10px] text-subtext/70">
-                {new Date(session.lastModified).toLocaleDateString()}
-              </div>
-            </button>
+            <div key={session.sessionId} className="group relative px-2">
+              <button
+                onClick={() => navigate(`/dashboard/chat/${session.sessionId}`)}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors truncate
+                  ${currentSessionId === session.sessionId
+                    ? 'bg-white text-primary shadow-sm border border-border'
+                    : 'text-subtext hover:bg-white hover:text-maintext'
+                  }
+                `}
+              >
+                <div className="font-medium truncate pr-6">{session.title}</div>
+                <div className="text-[10px] text-subtext/70">
+                  {new Date(session.lastModified).toLocaleDateString()}
+                </div>
+              </button>
+              <button
+                onClick={(e) => handleDeleteSession(e, session.sessionId)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-subtext hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Delete Chat"
+              >
+                <Plus className="w-4 h-4 rotate-45" />
+              </button>
+            </div>
           ))}
 
           {sessions.length === 0 && (

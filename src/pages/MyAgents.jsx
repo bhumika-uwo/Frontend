@@ -5,6 +5,7 @@ import axios from 'axios';
 import { apis, AppRoute } from '../types';
 import { getUserData } from '../userStore/userData';
 import { Link } from 'react-router';
+import AgentModal from '../Components/AgentModal/AgentModal';
 
 const MyAgents = () => {
     const [agents, setAgents] = useState([]);
@@ -12,6 +13,11 @@ const MyAgents = () => {
     const [expandedId, setExpandedId] = useState(null);
     const [editedInstructions, setEditedInstructions] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+
+    // Modal State
+    const [selectedAgent, setSelectedAgent] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const user = getUserData("user")
 
 
@@ -125,13 +131,16 @@ const MyAgents = () => {
                                 <p className="text-sm text-subtext mb-6 flex-1">{agent.description}</p>
 
                                 {/* Install Button */}
-                                <Link to={!agent?.url || agent.url.trim() === "" ? AppRoute.agentSoon : agent.url}>
-                                    <button
-                                        className="w-full py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all bg-green-50 text-green-600 border border-green-100"
-                                    >
-                                        Use
-                                    </button>
-                                </Link>
+                                <button
+                                    onClick={() => {
+                                        const targetUrl = (!agent?.url || agent.url.trim() === "") ? AppRoute.agentSoon : agent.url;
+                                        setSelectedAgent({ ...agent, url: targetUrl });
+                                        setIsModalOpen(true);
+                                    }}
+                                    className="w-full py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 hover:shadow-md"
+                                >
+                                    Use
+                                </button>
 
 
                             </div>)}
@@ -149,6 +158,12 @@ const MyAgents = () => {
                     </div>
                 </div>
             )}
+
+            <AgentModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                agent={selectedAgent}
+            />
         </div>
     );
 };

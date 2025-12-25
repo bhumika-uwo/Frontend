@@ -17,6 +17,7 @@ import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute.jsx';
 import { AppRoute } from './types';
 import { Menu } from 'lucide-react';
 import AiBiz from './agents/AIBIZ/AiBiz.jsx';
+import AiBase from './agents/AIBASE/AiBase.jsx';
 import ComingSoon from './Components/ComingSoon/ComingSoon.jsx';
 
 // ------------------------------
@@ -90,6 +91,7 @@ const NavigateProvider = () => {
 
         {/* Agent Routes */}
         <Route path='/agents/aibiz' element={<AiBiz />} />
+        <Route path='/agents/aibase' element={<AiBase />} />
 
         {/* Dashboard (Protected) - Wrapped with ProtectedRoute */}
         <Route
