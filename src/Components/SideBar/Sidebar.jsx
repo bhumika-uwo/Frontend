@@ -112,12 +112,13 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span>My Agents</span>
           </NavLink>
 
+
           <NavLink to={AppRoute.MARKETPLACE} className={navItemClass} onClick={onClose}>
             <ShoppingBag className="w-5 h-5" />
             <span>Marketplace</span>
           </NavLink>
 
-        
+
 
           {/* <NavLink to="/dashboard/automations" className={navItemClass} onClick={onClose}>
             <Zap className="w-5 h-5" />

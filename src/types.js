@@ -67,4 +67,5 @@ export const apis = {
   buyAgent: `${API}/agents/buy`,
   getUserAgents: `${API}/agents/get_my_agents`,
   chatAgent: `${API}/chat`,
+  aibiz: `${API}/aibiz`,
 };
