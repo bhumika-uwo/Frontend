@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Download, Check, Star, FileText, Play, X } from 'lucide-react';
 import axios from 'axios';
-import { apis } from '../types';
+import { apis, AppRoute } from '../types';
 import { getUserData, toggleState } from '../userStore/userData';
 import SubscriptionForm from '../Components/SubscriptionForm/SubscriptionForm';
 import { useRecoilState } from 'recoil';
@@ -25,36 +25,60 @@ const Marketplace = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // setLoading(true)
-    console.log(subToggle);
+    const fetchData = async () => {
+      // Only visualize loading on initial fetch to prevent flashing
+      if (agents.length === 0) {
+        setLoading(true);
+      }
+      const userId = user?.id || user?._id;
 
+      try {
+        const [userAgentsRes, agentsRes] = await Promise.allSettled([
+          axios.post(apis.getUserAgents, { userId }),
+          axios.get(apis.agents)
+        ]);
 
-    // localStorage.setItem("agents", JSON.stringify(agents))
-    axios.post(apis.getUserAgents, { userId: user?.id }).then((res) => {
-      setUserAgent(res.data.agents)
-      console.log(res.data.agents);
-      setLoading(false)
+        if (userAgentsRes.status === 'fulfilled') {
+          setUserAgent(userAgentsRes.value.data?.agents || []);
+        } else {
+          console.error("Failed to fetch user agents:", userAgentsRes.reason);
+        }
 
-    }).catch(err => console.log(err))
-    axios.get(apis.agents).then((agent) => {
-      setAgents(agent.data)
-      console.log(agent.data);
-    }).catch((err) => {
-      console.log(err);
-    })
+        if (agentsRes.status === 'fulfilled') {
+          setAgents(Array.isArray(agentsRes.value.data) ? agentsRes.value.data : []);
+        } else {
+          console.error("Failed to fetch agents:", agentsRes.reason);
+          setAgents([]);
+        }
+      } catch (error) {
+        console.error("Error fetching marketplace data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  }, [agentId])
+    fetchData();
+  }, [agentId, user?.id, user?._id, subToggle]);
 
 
   const toggleBuy = (id) => {
+    if (!user) {
+      navigate(AppRoute.LOGIN)
+      return
+    }
     setSubToggle({ ...subToggle, subscripPgTgl: true })
     setAgentId(id)
   };
 
   const filteredAgents = agents.filter(agent => {
+    // Only show apps that are 'Live'. 
+    // If status is missing, we assume it's one of the default/demo apps.
+    const isLive = !agent.status || agent.status === 'Live' || agent.status === 'active';
+    if (!isLive) return false;
+
     const matchesCategory = filter === 'all' || agent.category === filter;
-    const matchesSearch = agent.agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (agent.agentName || agent.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (agent.description || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -161,7 +185,7 @@ const Marketplace = () => {
               <img
                 src={agent.avatar}
                 alt={agent.agentName}
-                className="w-19 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
+                className="w-20 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
               />
               <div className="bg-surface border border-border px-2 py-1 rounded-lg flex items-center gap-1">
                 <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
@@ -192,13 +216,13 @@ const Marketplace = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => toggleBuy(agent._id)}
-                disabled={userAgent.some((ag) => agent._id == ag._id)}
-                className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userAgent.some((ag) => agent._id == ag._id)
+                disabled={userAgent.some((ag) => ag && agent._id == ag._id)}
+                className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userAgent.some((ag) => ag && agent._id == ag._id)
                   ? 'bg-blue-50 text-subtext border border-blue-100 cursor-not-allowed opacity-70'
                   : 'bg-primary text-white hover:opacity-90 shadow-lg shadow-primary/20'
                   }`}
               >
-                {userAgent.some((ag) => agent._id == ag._id) ? (
+                {userAgent.some((ag) => ag && agent._id == ag._id) ? (
                   <>
                     <Check className="w-4 h-4" /> Subscribed
                   </>
@@ -208,7 +232,7 @@ const Marketplace = () => {
                   </>
                 )}
               </button>
-              {userAgent.some((ag) => agent._id == ag._id) && (
+              {userAgent.some((ag) => ag && agent._id == ag._id) && (
                 <button
                   onClick={() => {
                     navigate(AppRoute.INVOICES);

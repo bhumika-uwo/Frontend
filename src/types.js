@@ -53,8 +53,10 @@ export const AppRoute = {
   SETTINGS: "/dashboard/settings",
   INVOICES: "/dashboard/invoices",
   NOTIFICATIONS: "/dashboard/notifications",
-  PROFILE: "/dashboard/profile",
   agentSoon: "/agentsoon",
+  ADMIN: "/dashboard/admin",
+  SECURITY: "/dashboard/security",
+  PROFILE: "/dashboard/profile",
 };
 
 // Use environment variable for API URL (configured in .env file)
@@ -74,4 +76,5 @@ export const apis = {
   getMyAgents: `${API}/agents/me`,
   chatAgent: `${API}/chat`,
   aibiz: `${API}/aibiz`,
+  support: `${API}/support`,
 };

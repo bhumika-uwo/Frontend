@@ -26,6 +26,12 @@ import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute.jsx';
 import UserProfile from './pages/UserProfile.jsx';
 
 const LiveDemoPage = lazy(() => import('./pages/LiveDemoPage'));
+const SecurityAndGuidelines = lazy(() => import('./pages/SecurityAndGuidelines'));
+const VendorDashboard = lazy(() => import('./pages/VendorDashboard'));
+const VendorApps = lazy(() => import('./pages/VendorApps'));
+const RevenueOverview = lazy(() => import('./Components/Vendor/RevenueOverview'));
+const TransactionHistory = lazy(() => import('./Components/Admin/TransactionHistory'));
+const VendorSupport = lazy(() => import('./pages/VendorSupport'));
 
 const AuthenticatRoute = ({ children }) => {
   return children;
@@ -101,21 +107,17 @@ const NavigateProvider = () => {
         <Route path="/agentsoon" element={<ComingSoon />}></Route>
         {/* agents */}
         <Route path='/agents/aibiz' element={<AiBiz />}></Route>
-        <Route path='/agents/aibase' element={<AiBase />}></Route>
+        <Route path='/agents/aibase/*' element={<AiBase />}></Route>
         {/* Dashboard (Protected) */}
         <Route
           path={AppRoute.DASHBOARD}
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
+          element={<DashboardLayout />}
         >
-          <Route index element={<Navigate to="chat" replace />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="chat/:sessionId" element={<Chat />} />
-          <Route path="overview" element={<DashboardOverview />} />
-          <Route path="profile" element={<UserProfile />} />
+          <Route index element={<Navigate to="marketplace" replace />} />
+          <Route path="chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="chat/:sessionId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="overview" element={<ProtectedRoute><DashboardOverview /></ProtectedRoute>} />
+          <Route path="profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
           <Route path="marketplace" element={<Marketplace />} />
           {/* <Route path="live-demos" element={
             <Suspense fallback={<div className="flex items-center justify-center h-full"><p className="text-subtext">Loading...</p></div>}>
@@ -128,6 +130,30 @@ const NavigateProvider = () => {
           <Route path="settings" element={<Admin />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="security" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+              <SecurityAndGuidelines />
+            </Suspense>
+          } />
+        </Route>
+
+        {/* Vendor Dashboard */}
+        <Route
+          path="/vendor"
+          element={
+            <Suspense fallback={<div className="h-screen bg-white" />}>
+              <VendorDashboard />
+            </Suspense>
+          }
+        >
+          <Route index element={<Navigate to="revenue/overview" replace />} />
+          <Route path="overview" element={<PlaceholderPage title="Vendor Overview" />} />
+          <Route path="apps" element={<VendorApps />} />
+          <Route path="revenue/overview" element={<RevenueOverview />} />
+          <Route path="revenue/transactions" element={<TransactionHistory />} />
+          <Route path="support/user" element={<VendorSupport />} />
+          <Route path="support/admin" element={<PlaceholderPage title="Admin Support" />} />
+          <Route path="settings" element={<PlaceholderPage title="Vendor Settings" />} />
         </Route>
 
         {/* Catch All */}

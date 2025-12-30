@@ -6,12 +6,14 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { apis, AppRoute } from '../types';
-import { getUserData } from '../userStore/userData';
+import { getUserData, userData, setUserData } from '../userStore/userData';
 import { chatStorageService } from '../services/chatStorageService';
 import { useNavigate } from 'react-router';
+import { useRecoilState } from 'recoil';
 
 const UserProfile = () => {
-    const [user, setUser] = useState(null);
+    const [currentUserData, setCurrentUserData] = useRecoilState(userData);
+    const user = currentUserData.user;
     const [agents, setAgents] = useState([]);
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -32,7 +34,8 @@ const UserProfile = () => {
                 const userRes = await axios.get(apis.user, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                setUser(userRes.data);
+                setCurrentUserData({ user: userRes.data });
+                setUserData(userRes.data); // Update localStorage via helper
                 setNewName(userRes.data.name);
 
                 // Fetch Agents
@@ -68,12 +71,8 @@ const UserProfile = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            setUser(res.data);
-            // Update local storage if needed to keep session in sync, 
-            // though sidebars usually refetch or use recoil. 
-            // For now, just updating local state is enough for this view.
-            const localUser = JSON.parse(localStorage.getItem('user') || '{}');
-            localStorage.setItem('user', JSON.stringify({ ...localUser, name: res.data.name }));
+            setCurrentUserData({ user: res.data });
+            setUserData(res.data); // Update localStorage via helper
 
             setIsEditing(false);
         } catch (error) {
