@@ -25,6 +25,12 @@ import { lazy, Suspense } from 'react';
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute.jsx';
 
 const LiveDemoPage = lazy(() => import('./pages/LiveDemoPage'));
+const SecurityAndGuidelines = lazy(() => import('./pages/SecurityAndGuidelines'));
+const VendorDashboard = lazy(() => import('./pages/VendorDashboard'));
+const VendorApps = lazy(() => import('./pages/VendorApps'));
+const RevenueOverview = lazy(() => import('./Components/Vendor/RevenueOverview'));
+const TransactionHistory = lazy(() => import('./Components/Admin/TransactionHistory'));
+const VendorSupport = lazy(() => import('./pages/VendorSupport'));
 
 const AuthenticatRoute = ({ children }) => {
   return children;
@@ -126,6 +132,30 @@ const NavigateProvider = () => {
           <Route path="settings" element={<Admin />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="security" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+              <SecurityAndGuidelines />
+            </Suspense>
+          } />
+        </Route>
+
+        {/* Vendor Dashboard */}
+        <Route
+          path="/vendor"
+          element={
+            <Suspense fallback={<div className="h-screen bg-white" />}>
+              <VendorDashboard />
+            </Suspense>
+          }
+        >
+          <Route index element={<Navigate to="revenue/overview" replace />} />
+          <Route path="overview" element={<PlaceholderPage title="Vendor Overview" />} />
+          <Route path="apps" element={<VendorApps />} />
+          <Route path="revenue/overview" element={<RevenueOverview />} />
+          <Route path="revenue/transactions" element={<TransactionHistory />} />
+          <Route path="support/user" element={<VendorSupport />} />
+          <Route path="support/admin" element={<PlaceholderPage title="Admin Support" />} />
+          <Route path="settings" element={<PlaceholderPage title="Vendor Settings" />} />
         </Route>
 
         {/* Catch All */}

@@ -11,7 +11,9 @@ import {
   X,
   Video,
   FileText,
-  Bell
+  Bell,
+  Shield,
+  DollarSign
 } from 'lucide-react';
 import { apis, AppRoute } from '../../types';
 import NotificationBar from '../NotificationBar/NotificationBar.jsx';
@@ -147,14 +149,20 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span>Billing</span>
           </NavLink>
 
+          <NavLink to={AppRoute.SECURITY} className={navItemClass} onClick={onClose}>
+            <Shield className="w-5 h-5" />
+            <span>Security & Guidelines</span>
+          </NavLink>
+
           {/* <NavLink to="/dashboard/automations" className={navItemClass} onClick={onClose}>
             <Zap className="w-5 h-5" />
             <span>Automations</span>
           </NavLink> */}
-          {user.role == "admin" && <NavLink to="/dashboard/admin" className={navItemClass} onClick={onClose}>
+          <NavLink to={AppRoute.ADMIN} className={navItemClass} onClick={onClose}>
             <Settings className="w-5 h-5" />
-            <span>Admin</span>
-          </NavLink>}
+            <span>Admin Dashboard</span>
+          </NavLink>
+
 
         </div>
 

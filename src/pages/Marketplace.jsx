@@ -31,16 +31,18 @@ const Marketplace = () => {
 
     // localStorage.setItem("agents", JSON.stringify(agents))
     axios.post(apis.getUserAgents, { userId: user?.id }).then((res) => {
-      setUserAgent(res.data.agents)
-      console.log(res.data.agents);
+      setUserAgent(res.data?.agents || [])
+      console.log(res.data?.agents);
       setLoading(false)
 
     }).catch(err => console.log(err))
     axios.get(apis.agents).then((agent) => {
-      setAgents(agent.data)
+      // Ensure we always set an array, even if data is unexpected
+      setAgents(Array.isArray(agent.data) ? agent.data : [])
       console.log(agent.data);
     }).catch((err) => {
       console.log(err);
+      setAgents([]); // Fallback to empty array on error
     })
 
   }, [agentId])
@@ -52,9 +54,14 @@ const Marketplace = () => {
   };
 
   const filteredAgents = agents.filter(agent => {
+    // Only show apps that are 'Live'. 
+    // If status is missing, we assume it's one of the default/demo apps.
+    const isLive = !agent.status || agent.status === 'Live';
+    if (!isLive) return false;
+
     const matchesCategory = filter === 'all' || agent.category === filter;
-    const matchesSearch = agent.agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (agent.agentName || agent.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (agent.description || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -192,13 +199,13 @@ const Marketplace = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => toggleBuy(agent._id)}
-                disabled={userAgent.some((ag) => agent._id == ag._id)}
-                className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userAgent.some((ag) => agent._id == ag._id)
+                disabled={userAgent.some((ag) => ag && agent._id == ag._id)}
+                className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userAgent.some((ag) => ag && agent._id == ag._id)
                   ? 'bg-blue-50 text-subtext border border-blue-100 cursor-not-allowed opacity-70'
                   : 'bg-primary text-white hover:opacity-90 shadow-lg shadow-primary/20'
                   }`}
               >
-                {userAgent.some((ag) => agent._id == ag._id) ? (
+                {userAgent.some((ag) => ag && agent._id == ag._id) ? (
                   <>
                     <Check className="w-4 h-4" /> Subscribed
                   </>
@@ -208,7 +215,7 @@ const Marketplace = () => {
                   </>
                 )}
               </button>
-              {userAgent.some((ag) => agent._id == ag._id) && (
+              {userAgent.some((ag) => ag && agent._id == ag._id) && (
                 <button
                   onClick={() => {
                     navigate(AppRoute.INVOICES);
