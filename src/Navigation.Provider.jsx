@@ -106,26 +106,23 @@ const NavigateProvider = () => {
         <Route path="/agentsoon" element={<ComingSoon />}></Route>
         {/* agents */}
         <Route path='/agents/aibiz' element={<AiBiz />}></Route>
-        <Route path='/agents/aibase' element={<AiBase />}></Route>
+        <Route path='/agents/aibase/*' element={<AiBase />}></Route>
         {/* Dashboard (Protected) */}
         <Route
           path={AppRoute.DASHBOARD}
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
+          element={<DashboardLayout />}
         >
-          <Route index element={<Navigate to="chat" replace />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="chat/:sessionId" element={<Chat />} />
-          <Route path="overview" element={<DashboardOverview />} />
+          <Route index element={<Navigate to="marketplace" replace />} />
+          <Route path="chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="chat/:sessionId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="overview" element={<ProtectedRoute><DashboardOverview /></ProtectedRoute>} />
           <Route path="marketplace" element={<Marketplace />} />
           {/* <Route path="live-demos" element={
             <Suspense fallback={<div className="flex items-center justify-center h-full"><p className="text-subtext">Loading...</p></div>}>
               <LiveDemoPage />
             </Suspense>
           } /> */}
+<<<<<<< HEAD
           <Route path="agents" element={<MyAgents />} />
           <Route path="automations" element={<Automations />} />
           <Route path="admin" element={<Admin />} />
@@ -156,6 +153,14 @@ const NavigateProvider = () => {
           <Route path="support/user" element={<VendorSupport />} />
           <Route path="support/admin" element={<PlaceholderPage title="Admin Support" />} />
           <Route path="settings" element={<PlaceholderPage title="Vendor Settings" />} />
+=======
+          <Route path="agents" element={<ProtectedRoute><MyAgents /></ProtectedRoute>} />
+          <Route path="automations" element={<ProtectedRoute><Automations /></ProtectedRoute>} />
+          <Route path="admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="settings" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+          <Route path="notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+>>>>>>> a6a2ce2e0ac4eb1852e4aa90aa31bf317ba61bac
         </Route>
 
         {/* Catch All */}
