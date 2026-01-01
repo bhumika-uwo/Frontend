@@ -201,14 +201,11 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span>Marketplace</span>
           </NavLink>
 
-<<<<<<< HEAD
           <NavLink to="/vendor/overview" className={navItemClass} onClick={onClose}>
             <LayoutGrid className="w-5 h-5" />
             <span>Vendor Dashboard</span>
           </NavLink>
 
-
-=======
           <NavLink to={AppRoute.INVOICES} className={navItemClass} onClick={onClose}>
             <FileText className="w-5 h-5" />
             <span>Billing</span>
@@ -218,7 +215,6 @@ const Sidebar = ({ isOpen, onClose }) => {
             <Shield className="w-5 h-5" />
             <span>Security & Guidelines</span>
           </NavLink>
->>>>>>> cbe4033bd645362cf73e7c95ce204b47682a9828
 
           {/* <NavLink to="/dashboard/automations" className={navItemClass} onClick={onClose}>
             <Zap className="w-5 h-5" />

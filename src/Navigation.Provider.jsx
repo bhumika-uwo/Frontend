@@ -12,12 +12,9 @@ import MyAgents from './pages/MyAgents';
 import DashboardOverview from './pages/DashboardOverview';
 import Automations from './pages/Automations';
 import Admin from './pages/Admin';
-<<<<<<< HEAD
 import VendorRegister from './pages/VendorRegister';
-=======
 import Invoices from './pages/Invoices';
 import Notifications from './pages/Notifications';
->>>>>>> cbe4033bd645362cf73e7c95ce204b47682a9828
 
 import { AppRoute } from './types';
 import { Menu } from 'lucide-react';
@@ -31,14 +28,6 @@ import { lazy, Suspense } from 'react';
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute.jsx';
 import UserProfile from './pages/UserProfile.jsx';
 
-const LiveDemoPage = lazy(() => import('./pages/LiveDemoPage'));
-const SecurityAndGuidelines = lazy(() => import('./pages/SecurityAndGuidelines'));
-const VendorDashboard = lazy(() => import('./pages/VendorDashboard'));
-const VendorApps = lazy(() => import('./pages/VendorApps'));
-const RevenueOverview = lazy(() => import('./Components/Vendor/RevenueOverview'));
-const TransactionHistory = lazy(() => import('./Components/Admin/TransactionHistory'));
-const VendorSupport = lazy(() => import('./pages/VendorSupport'));
-
 // Vendor Imports
 import VendorLayout from './Components/Vendor/VendorLayout';
 import VendorOverview from './pages/Vendor/VendorOverview';
@@ -51,20 +40,11 @@ import VendorAdminSupport from './pages/Vendor/VendorAdminSupport';
 import VendorAppDetail from './pages/Vendor/VendorAppDetail';
 import VendorTransactions from './pages/Vendor/VendorTransactions';
 
-// ... (other imports)
+const LiveDemoPage = lazy(() => import('./pages/LiveDemoPage'));
+const SecurityAndGuidelines = lazy(() => import('./pages/SecurityAndGuidelines'));
+const TransactionHistory = lazy(() => import('./Components/Admin/TransactionHistory'));
 
-// Inside Routes
-<Route path="/vendor" element={<VendorLayout />}>
-  <Route index element={<Navigate to="overview" replace />} />
-  <Route path="overview" element={<VendorOverview />} />
-  <Route path="apps" element={<VendorApps />} />
-  <Route path="apps/:appId" element={<VendorAppDetail />} />
-  <Route path="revenue" element={<VendorRevenue />} />
-  <Route path="revenue/transactions" element={<VendorTransactions />} />
-  <Route path="settings" element={<VendorSettings />} />
-  <Route path="user-support" element={<VendorUserSupport />} />
-  <Route path="admin-support" element={<VendorAdminSupport />} />
-</Route>
+
 
 const AuthenticatRoute = ({ children }) => {
   return children;
@@ -173,24 +153,7 @@ const NavigateProvider = () => {
           } />
         </Route>
 
-        {/* Vendor Dashboard */}
-        <Route
-          path="/vendor"
-          element={
-            <Suspense fallback={<div className="h-screen bg-white" />}>
-              <VendorDashboard />
-            </Suspense>
-          }
-        >
-          <Route index element={<Navigate to="revenue/overview" replace />} />
-          <Route path="overview" element={<PlaceholderPage title="Vendor Overview" />} />
-          <Route path="apps" element={<VendorApps />} />
-          <Route path="revenue/overview" element={<RevenueOverview />} />
-          <Route path="revenue/transactions" element={<TransactionHistory />} />
-          <Route path="support/user" element={<VendorSupport />} />
-          <Route path="support/admin" element={<PlaceholderPage title="Admin Support" />} />
-          <Route path="settings" element={<PlaceholderPage title="Vendor Settings" />} />
-        </Route>
+
 
         {/* Vendor Dashboard Routes (Public for MVP/Testing) */}
         <Route path="/vendor" element={<VendorLayout />}>
