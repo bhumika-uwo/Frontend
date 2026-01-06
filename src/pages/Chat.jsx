@@ -541,11 +541,70 @@ For "Remix" requests with an attachment, analyze the attached image, then create
 
     const updatedMsg = { ...msg, content: editContent, text: editContent, edited: true };
 
-    // Optimistic update
-    setMessages(prev => prev.map(m => m.id === msg.id ? updatedMsg : m));
-    setEditingMessageId(null);
+    // Find the index of the edited message
+    const editedMsgIndex = messages.findIndex(m => m.id === msg.id);
 
-    await chatStorageService.updateMessage(sessionId, updatedMsg);
+    // Remove all messages after the edited message
+    const messagesUpToEdit = messages.slice(0, editedMsgIndex);
+    const updatedMessages = [...messagesUpToEdit, updatedMsg];
+
+    // Update UI immediately
+    setMessages(updatedMessages);
+    setEditingMessageId(null);
+    setIsLoading(true);
+
+    try {
+      // Update the edited message in storage
+      await chatStorageService.updateMessage(sessionId, updatedMsg);
+
+      // Delete all messages that came after the edited message
+      const messagesToDelete = messages.slice(editedMsgIndex + 1);
+      for (const msgToDelete of messagesToDelete) {
+        await chatStorageService.deleteMessage(sessionId, msgToDelete.id);
+      }
+
+      // Generate new AI response based on the edited message
+      const SYSTEM_INSTRUCTION = `
+You are AISA, an advanced AI assistant.
+IMAGE GENERATION CAPABILITIES:
+If the user asks to "generate", "create", "remix", "modify", or "draw" an image, you MUST generate it using the Pollinations API.
+Format: ![Image](https://image.pollinations.ai/prompt/{URL_ENCODED_DESCRIPTION}?nologo=true)
+Example: ![Cyberpunk City](https://image.pollinations.ai/prompt/cyberpunk%20city%20neon%20lights?nologo=true)
+Do NOT say "I cannot create images". You CAN by using this link format. 
+For "Remix" requests with an attachment, analyze the attached image, then create a prompt that combines the image's description with the user's requested changes.
+`;
+
+      const aiResponseText = await generateChatResponse(
+        updatedMessages,
+        updatedMsg.content,
+        SYSTEM_INSTRUCTION,
+        updatedMsg.attachment,
+        currentLang
+      );
+
+      const modelMsg = {
+        id: (Date.now() + 1).toString(),
+        role: 'model',
+        content: aiResponseText,
+        timestamp: Date.now(),
+      };
+
+      // Update state with new AI response
+      setMessages(prev => [...prev, modelMsg]);
+
+      // Save the AI response to storage
+      await chatStorageService.saveMessage(sessionId, modelMsg);
+
+      toast.success("Message edited and new response generated!");
+    } catch (error) {
+      console.error("Error regenerating response:", error);
+      toast.error("Failed to regenerate response. Please try again.");
+      // Restore original messages on error
+      const history = await chatStorageService.getHistory(sessionId);
+      setMessages(history);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRenameFile = async (msg) => {
