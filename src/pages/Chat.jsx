@@ -1,7 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Send, Bot, User, Sparkles, Plus, Monitor, ChevronDown, History, Paperclip, X, FileText, Image as ImageIcon, Cloud, HardDrive, Edit2, Download, Mic, Wand2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Plus, Monitor, ChevronDown, History, Paperclip, X, FileText, Image as ImageIcon, Cloud, HardDrive, Edit2, Download, Mic, Wand2, Eye, FileSpreadsheet, Presentation, File, MoreVertical, Trash2, Check, Camera, Video } from 'lucide-react';
+import { renderAsync } from 'docx-preview';
+import * as XLSX from 'xlsx';
+import { Menu, Transition } from '@headlessui/react';
 import { generateChatResponse } from '../services/geminiService';
 import { chatStorageService } from '../services/chatStorageService';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,12 +12,17 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Loader from '../Components/Loader/Loader';
 import toast from 'react-hot-toast';
+import LiveAI from '../Components/LiveAI';
+
+import ImageEditor from '../Components/ImageEditor';
 
 const Chat = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
   const [messages, setMessages] = useState([]);
+  const [excelHTML, setExcelHTML] = useState(null);
+  const [textPreview, setTextPreview] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +32,8 @@ const Chat = () => {
 
   // File Upload State
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [isLiveMode, setIsLiveMode] = useState(false);
   const [filePreview, setFilePreview] = useState(null);
   const uploadInputRef = useRef(null);
   const driveInputRef = useRef(null);
@@ -76,20 +86,9 @@ const Chat = () => {
       'application/vnd.openxmlformats-officedocument.presentationml.presentation'
     ];
 
-    // Check if valid
-    const isValid = validTypes.some(type => file.type.startsWith(type)) ||
-      /\.(doc|docx|xls|xlsx|ppt|pptx)$/i.test(file.name);
+    // All file types updated to be accepted
 
-    if (!isValid) {
-      toast.error('Only Images, PDFs, and Office Documents are supported');
-      return;
-    }
-
-    // Validate file size (max 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('File size must be less than 50MB');
-      return;
-    }
+    // Unlimited file size allowed
 
     setSelectedFile(file);
 
@@ -106,14 +105,24 @@ const Chat = () => {
   };
 
   const handlePaste = (e) => {
-    if (e.clipboardData && e.clipboardData.items) {
+    // Handle files pasted from file system
+    if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+      e.preventDefault();
+      processFile(e.clipboardData.files[0]);
+      return;
+    }
+
+    // Handle pasted data items
+    if (e.clipboardData.items) {
       const items = e.clipboardData.items;
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf("image") !== -1 || items[i].type === 'application/pdf') {
+        if (items[i].kind === 'file') {
           const file = items[i].getAsFile();
-          processFile(file);
-          e.preventDefault(); // Prevent default paste behavior if file is found
-          return;
+          if (file) {
+            e.preventDefault();
+            processFile(file);
+            return;
+          }
         }
       }
     }
@@ -212,7 +221,7 @@ const Chat = () => {
       const userMsg = {
         id: Date.now().toString(),
         role: 'user',
-        content: inputValue,
+        content: inputValue.trim() || (selectedFile ? "Describe this image" : ""),
         timestamp: Date.now(),
         attachment: selectedFile ? {
           type: selectedFile.type.startsWith('image/') ? 'image' : 'file',
@@ -238,7 +247,16 @@ const Chat = () => {
         }
 
         // Send to AI for response
-        const aiResponseText = await generateChatResponse(updatedMessages, userMsg.content, undefined, userMsg.attachment, currentLang);
+        const SYSTEM_INSTRUCTION = `
+You are AISA, an advanced AI assistant.
+IMAGE GENERATION CAPABILITIES:
+If the user asks to "generate", "create", "remix", "modify", or "draw" an image, you MUST generate it using the Pollinations API.
+Format: ![Image](https://image.pollinations.ai/prompt/{URL_ENCODED_DESCRIPTION}?nologo=true)
+Example: ![Cyberpunk City](https://image.pollinations.ai/prompt/cyberpunk%20city%20neon%20lights?nologo=true)
+Do NOT say "I cannot create images". You CAN by using this link format. 
+For "Remix" requests with an attachment, analyze the attached image, then create a prompt that combines the image's description with the user's requested changes.
+`;
+        const aiResponseText = await generateChatResponse(updatedMessages, userMsg.content, SYSTEM_INSTRUCTION, userMsg.attachment, currentLang);
 
         const modelMsg = {
           id: (Date.now() + 1).toString(),
@@ -312,22 +330,22 @@ const Chat = () => {
         command = 'Remove the background and clean up this image.';
         break;
       case 'remix':
-        command = 'Add a creative remix or change to this image: ';
+        command = 'Create a stunning new image based on this attachment. Here are the details: ';
         break;
       case 'enhance':
-        command = 'Enhance the quality and details of this image.';
+        command = 'Analyze the attached image and generate a higher quality version of it.';
         break;
       default:
         break;
     }
     setInputValue(command);
-    toast.success(`${action.replace('-', ' ')} mode active`);
 
-    // Auto-submit if it's a direct command
-    if (command && action !== 'remix') {
-      setTimeout(() => {
-        handleSendMessage();
-      }, 100);
+    if (action === 'remix') {
+      inputRef.current?.focus();
+      toast.success("Describe your changes and hit send!");
+    } else {
+      toast.success(`${action.replace('-', ' ')} processing...`);
+      setTimeout(() => handleSendMessage(), 100);
     }
   };
   const inputRef = useRef(null);
@@ -342,14 +360,7 @@ const Chat = () => {
       manualStopRef.current = false;
       timerRef.current = setInterval(() => {
         setListeningTime(prev => {
-          if (prev >= 300) { // Limit to 5 minutes
-            manualStopRef.current = true;
-            isListeningRef.current = false;
-            if (recognitionRef.current) recognitionRef.current.stop();
-            setIsListening(false);
-            toast.success("Max recording time reached (5m)");
-            return 300;
-          }
+          // Unlimited recording time
           return prev + 1;
         });
       }, 1000);
@@ -507,8 +518,274 @@ const Chat = () => {
     }
   };
 
+
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editContent, setEditContent] = useState("");
+
+  const handleMessageDelete = async (messageId) => {
+    if (!confirm("Delete this message?")) return;
+
+    // Optimistic update
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+
+    await chatStorageService.deleteMessage(sessionId, messageId);
+  };
+
+  const startEditing = (msg) => {
+    setEditingMessageId(msg.id);
+    setEditContent(msg.content || msg.text || "");
+  };
+
+  const saveEdit = async (msg) => {
+    if (editContent.trim() === "") return; // Don't allow empty
+
+    const updatedMsg = { ...msg, content: editContent, text: editContent, edited: true };
+
+    // Optimistic update
+    setMessages(prev => prev.map(m => m.id === msg.id ? updatedMsg : m));
+    setEditingMessageId(null);
+
+    await chatStorageService.updateMessage(sessionId, updatedMsg);
+  };
+
+  const handleRenameFile = async (msg) => {
+    if (!msg.attachment) return;
+
+    const oldName = msg.attachment.name;
+    const dotIndex = oldName.lastIndexOf('.');
+    const extension = dotIndex !== -1 ? oldName.slice(dotIndex) : '';
+    const baseName = dotIndex !== -1 ? oldName.slice(0, dotIndex) : oldName;
+
+    const newBaseName = prompt("Enter new filename:", baseName);
+    if (!newBaseName || newBaseName === baseName) return;
+
+    const newName = newBaseName + extension;
+    const updatedMsg = {
+      ...msg,
+      attachment: {
+        ...msg.attachment,
+        name: newName
+      }
+    };
+
+    setMessages(prev => prev.map(m => m.id === msg.id ? updatedMsg : m));
+    await chatStorageService.updateMessage(sessionId, updatedMsg);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent("");
+  };
+
+  const [viewingDoc, setViewingDoc] = useState(null);
+  const docContainerRef = useRef(null);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') setViewingDoc(null);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
+
+  // Process Word documents
+  useEffect(() => {
+    if (viewingDoc && viewingDoc.name.match(/\.(docx|doc)$/i) && docContainerRef.current) {
+      // Clear previous content
+      docContainerRef.current.innerHTML = '';
+
+      fetch(viewingDoc.url)
+        .then(res => res.blob())
+        .then(blob => {
+          renderAsync(blob, docContainerRef.current, undefined, {
+            inWrapper: true,
+            ignoreWidth: false,
+            className: "docx-viewer"
+          }).catch(err => {
+            console.error("Docx Preview Error:", err);
+            docContainerRef.current.innerHTML = '<div class="text-center p-10 text-subtext">Preview not available.<br/>Please download to view.</div>';
+          });
+        });
+    }
+  }, [viewingDoc]);
+
+  // Process Excel documents
+  useEffect(() => {
+    if (viewingDoc && viewingDoc.name.match(/\.(xls|xlsx|csv)$/i)) {
+      setExcelHTML(null); // Reset
+      fetch(viewingDoc.url)
+        .then(res => res.arrayBuffer())
+        .then(ab => {
+          const wb = XLSX.read(ab, { type: 'array' });
+          const firstSheetName = wb.SheetNames[0];
+          const ws = wb.Sheets[firstSheetName];
+          const html = XLSX.utils.sheet_to_html(ws, { id: "excel-preview", editable: false });
+          setExcelHTML(html);
+        })
+        .catch(err => {
+          console.error("Excel Preview Error:", err);
+          setExcelHTML('<div class="text-center p-10 text-red-500">Failed to load Excel preview.</div>');
+        });
+    }
+  }, [viewingDoc]);
+
+  // Process Text/Code documents
+  useEffect(() => {
+    // Check if handled by other specific viewers
+    const isSpecial = viewingDoc?.name.match(/\.(docx|doc|xls|xlsx|csv|pdf|mp4|webm|ogg|mov|mp3|wav|m4a|jpg|jpeg|png|gif|webp|bmp|svg)$/i) || viewingDoc?.url.startsWith('data:image/');
+
+    if (viewingDoc && !isSpecial) {
+      setTextPreview(null);
+      fetch(viewingDoc.url)
+        .then(res => res.text())
+        .then(text => {
+          if (text.length > 5000000) {
+            setTextPreview(text.substring(0, 5000000) + "\n\n... (File truncated due to size)");
+          } else {
+            setTextPreview(text);
+          }
+        })
+        .catch(err => {
+          console.error("Text Preview Error:", err);
+          setTextPreview("Failed to load text content.");
+        });
+    }
+  }, [viewingDoc]);
+
   return (
     <div className="flex h-full w-full bg-secondary relative overflow-hidden">
+
+      {/* Document Viewer Modal */}
+      <AnimatePresence>
+        {viewingDoc && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card w-full max-w-6xl h-full max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-border"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border bg-secondary">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-maintext truncate max-w-md">{viewingDoc.name}</h3>
+                    <p className="text-xs text-subtext">
+                      {viewingDoc.type === 'image' || viewingDoc.name.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)
+                        ? 'Image Preview'
+                        : 'File Preview'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload(viewingDoc.url, viewingDoc.name)}
+                    className="p-2 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors text-subtext"
+                    title="Download"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setViewingDoc(null)}
+                    className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors text-subtext"
+                    title="Close"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Viewer Content */}
+              <div className="flex-1 bg-gray-100 dark:bg-gray-900 relative flex items-center justify-center overflow-hidden">
+                {viewingDoc.type === 'image' || viewingDoc.name.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) || viewingDoc.url.startsWith('data:image/') ? (
+                  <img
+                    src={viewingDoc.url}
+                    alt="Preview"
+                    className="max-w-full max-h-full object-contain p-2"
+                  />
+                ) : viewingDoc.name.match(/\.(docx|doc)$/i) ? (
+                  <div
+                    ref={docContainerRef}
+                    className="bg-gray-100 w-full h-full overflow-y-auto custom-scrollbar flex flex-col items-center py-8"
+                  />
+                ) : viewingDoc.name.match(/\.(xls|xlsx|csv)$/i) ? (
+                  <div
+                    className="bg-white w-full h-full overflow-auto p-4 custom-scrollbar text-black text-sm"
+                    dangerouslySetInnerHTML={{ __html: excelHTML || '<div class="flex items-center justify-center h-full"><div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div></div>' }}
+                  />
+                ) : viewingDoc.name.endsWith('.pdf') || viewingDoc.url.startsWith('data:application/pdf') ? (
+                  <iframe
+                    src={viewingDoc.url}
+                    className="w-full h-full border-0"
+                    title="Document Viewer"
+                  />
+                ) : viewingDoc.name.match(/\.(mp4|webm|ogg|mov)$/i) || viewingDoc.type.startsWith('video/') ? (
+                  <video controls className="max-w-full max-h-full rounded-lg shadow-lg" src={viewingDoc.url}>
+                    Your browser does not support the video tag.
+                  </video>
+                ) : viewingDoc.name.match(/\.(mp3|wav|ogg|m4a)$/i) || viewingDoc.type.startsWith('audio/') ? (
+                  <div className="p-10 bg-surface rounded-2xl flex flex-col items-center gap-6 shadow-md border border-border">
+                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center animate-pulse-slow">
+                      <div className="w-12 h-12 border-2 border-primary rounded-full flex items-center justify-center">
+                        <Mic className="w-6 h-6 text-primary" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-bold text-lg mb-1">{viewingDoc.name}</h3>
+                      <p className="text-xs text-subtext">Audio File Player</p>
+                    </div>
+                    <audio controls className="w-full min-w-[300px]" src={viewingDoc.url}>
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-[#1e1e1e] p-0 flex flex-col overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#3e3e42] shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#cccccc] uppercase tracking-wider">
+                          {viewingDoc.name.match(/\.(rar|zip|exe|dll|bin|iso|7z)$/i) ? 'BINARY CONTENT' : 'CODE READER'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-[#0e639c] text-white font-mono shadow-sm">
+                        {viewingDoc.name.split('.').pop().toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 overflow-auto custom-scrollbar p-4">
+                      <code className="text-xs font-mono whitespace-pre-wrap text-[#9cdcfe] break-all leading-relaxed tab-4 block">
+                        {textPreview || "Reading file stream..."}
+                      </code>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Editor */}
+      <AnimatePresence>
+        {isEditingImage && selectedFile && (
+          <ImageEditor
+            file={selectedFile}
+            onClose={() => setIsEditingImage(false)}
+            onSave={(newFile) => {
+              processFile(newFile);
+              setIsEditingImage(false);
+              toast.success("Image updated!");
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Mobile History Backdrop */}
       {showHistory && (
@@ -643,9 +920,11 @@ const Chat = () => {
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex items-start gap-3 sm:gap-4 max-w-4xl mx-auto ${msg.role === 'user' ? 'flex-row-reverse' : ''
+                  className={`group relative flex items-start gap-3 sm:gap-4 max-w-4xl mx-auto ${msg.role === 'user' ? 'flex-row-reverse' : ''
                     }`}
                 >
+                  {/* Actions Menu (Always visible for discoverability) */}
+
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user'
                       ? 'bg-primary'
@@ -664,16 +943,81 @@ const Chat = () => {
                       } max-w-[85%] sm:max-w-[80%]`}
                   >
                     <div
-                      className={`px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${msg.role === 'user'
+                      className={`group/bubble relative px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${msg.role === 'user'
                         ? 'bg-primary text-white rounded-tr-none'
                         : 'bg-surface border border-border text-maintext rounded-tl-none'
                         }`}
                     >
+                      {/* Message Actions (Inside Bubble - WhatsApp Style) */}
+                      <div className={`absolute top-0.5 right-0.5 opacity-0 group-hover/bubble:opacity-100 transition-opacity z-20`}>
+                        <Menu as="div" className="relative inline-block text-left">
+                          <Menu.Button className={`p-0.5 rounded-full ${msg.role === 'user' ? 'hover:bg-black/20 text-white/70 hover:text-white' : 'hover:bg-black/5 text-subtext hover:text-maintext'} transition-colors`}>
+                            <ChevronDown className="w-3 h-3" />
+                          </Menu.Button>
+                          <Transition
+                            as={Fragment}
+                            enter="transition ease-out duration-100"
+                            enterFrom="transform opacity-0 scale-95"
+                            enterTo="transform opacity-100 scale-100"
+                            leave="transition ease-in duration-75"
+                            leaveFrom="transform opacity-100 scale-100"
+                            leaveTo="transform opacity-0 scale-95"
+                          >
+                            <Menu.Items className="absolute right-0 mt-1 w-32 origin-top-right divide-y divide-border rounded-md bg-surface shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none border border-border z-30">
+                              <div className="p-1">
+                                {msg.role === 'user' && !msg.attachment && (
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => startEditing(msg)}
+                                        className={`${active ? 'bg-primary/10 text-primary' : 'text-maintext'
+                                          } group flex w-full items-center rounded-md px-2 py-2 text-xs`}
+                                      >
+                                        <Edit2 className="mr-2 h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                )}
+                                {msg.role === 'user' && msg.attachment && (
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => handleRenameFile(msg)}
+                                        className={`${active ? 'bg-primary/10 text-primary' : 'text-maintext'
+                                          } group flex w-full items-center rounded-md px-2 py-2 text-xs`}
+                                      >
+                                        <Edit2 className="mr-2 h-3.5 w-3.5" />
+                                        Rename File
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                )}
+                                <Menu.Item>
+                                  {({ active }) => (
+                                    <button
+                                      onClick={() => handleMessageDelete(msg.id)}
+                                      className={`${active ? 'bg-red-500/10 text-red-500' : 'text-red-500'
+                                        } group flex w-full items-center rounded-md px-2 py-2 text-xs`}
+                                    >
+                                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                                      Delete
+                                    </button>
+                                  )}
+                                </Menu.Item>
+                              </div>
+                            </Menu.Items>
+                          </Transition>
+                        </Menu>
+                      </div>
                       {/* Attachment Display */}
                       {msg.attachment && (
                         <div className="mb-3 mt-1">
                           {msg.attachment.type === 'image' ? (
-                            <div className="relative group/image overflow-hidden rounded-xl border border-white/20 shadow-lg transition-all hover:scale-[1.02]">
+                            <div
+                              className="relative group/image overflow-hidden rounded-xl border border-white/20 shadow-lg transition-all hover:scale-[1.02] cursor-pointer"
+                              onClick={() => setViewingDoc(msg.attachment)}
+                            >
                               <img
                                 src={msg.attachment.url}
                                 alt="Attachment"
@@ -689,25 +1033,61 @@ const Chat = () => {
                             </div>
                           ) : (
                             <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${msg.role === 'user' ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-secondary/30 border-border hover:bg-secondary/50'}`}>
-                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-white/20' : 'bg-primary/10 text-primary'}`}>
-                                <FileText className="w-6 h-6" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="font-semibold truncate text-xs mb-0.5">{msg.attachment.name}</p>
-                                <p className="text-[10px] opacity-70 uppercase tracking-tight font-medium">
+                              <div
+                                className="flex-1 flex items-center gap-3 min-w-0 cursor-pointer p-1.5 -ml-1.5 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                                onClick={() => setViewingDoc(msg.attachment)}
+                              >
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${(() => {
+                                  const name = msg.attachment.name.toLowerCase();
+                                  if (msg.role === 'user') return 'bg-white shadow-sm';
+
+                                  if (name.endsWith('.pdf')) return 'bg-red-50 dark:bg-red-900/20';
+                                  if (name.match(/\.(doc|docx)$/)) return 'bg-blue-50 dark:bg-blue-900/20';
+                                  if (name.match(/\.(xls|xlsx|csv)$/)) return 'bg-emerald-50 dark:bg-emerald-900/20';
+                                  if (name.match(/\.(ppt|pptx)$/)) return 'bg-orange-50 dark:bg-orange-900/20';
+                                  return 'bg-secondary';
+                                })()
+                                  }`}>
                                   {(() => {
                                     const name = msg.attachment.name.toLowerCase();
-                                    if (name.match(/\.(doc|docx)$/)) return 'Word Document';
-                                    if (name.match(/\.(xls|xlsx)$/)) return 'Excel Sheet';
-                                    if (name.match(/\.(ppt|pptx)$/)) return 'Presentation';
-                                    if (name.endsWith('.pdf')) return 'PDF Document';
-                                    return 'Document';
+                                    const baseClass = "w-6 h-6";
+
+                                    if (name.match(/\.(xls|xlsx|csv)$/)) {
+                                      return <FileSpreadsheet className={`${baseClass} text-emerald-600`} />;
+                                    }
+                                    if (name.match(/\.(ppt|pptx)$/)) {
+                                      return <Presentation className={`${baseClass} text-orange-600`} />;
+                                    }
+                                    if (name.endsWith('.pdf')) {
+                                      return <FileText className={`${baseClass} text-red-600`} />;
+                                    }
+                                    if (name.match(/\.(doc|docx)$/)) {
+                                      return <File className={`${baseClass} text-blue-600`} />;
+                                    }
+                                    return <File className={`${baseClass} text-primary`} />;
                                   })()}
-                                </p>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold truncate text-xs mb-0.5">{msg.attachment.name}</p>
+                                  <p className="text-[10px] opacity-70 uppercase tracking-tight font-medium">
+                                    {(() => {
+                                      const name = msg.attachment.name.toLowerCase();
+                                      if (name.endsWith('.pdf')) return 'PDF • Preview';
+                                      if (name.match(/\.(doc|docx)$/)) return 'WORD • Preview';
+                                      if (name.match(/\.(xls|xlsx|csv)$/)) return 'EXCEL';
+                                      if (name.match(/\.(ppt|pptx)$/)) return 'SLIDES';
+                                      return 'DOCUMENT';
+                                    })()}
+                                  </p>
+                                </div>
                               </div>
                               <button
-                                onClick={() => handleDownload(msg.attachment.url, msg.attachment.name)}
-                                className={`p-2 rounded-lg transition-colors ${msg.role === 'user' ? 'hover:bg-white/20' : 'hover:bg-primary/10 text-primary'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(msg.attachment.url, msg.attachment.name);
+                                }}
+                                className={`p-2 rounded-lg transition-colors shrink-0 ${msg.role === 'user' ? 'hover:bg-white/20' : 'hover:bg-primary/10 text-primary'}`}
+                                title="Download"
                               >
                                 <Download className="w-4 h-4" />
                               </button>
@@ -716,46 +1096,69 @@ const Chat = () => {
                         </div>
                       )}
 
-                      {msg.content && (
-                        <div className={`prose prose-invert max-w-none ${msg.role === 'user' ? 'text-white' : 'text-maintext'}`}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              p: ({ children }) => <p className="mb-0">{children}</p>,
-                              img: ({ node, ...props }) => (
-                                <div className="relative group/generated mt-4 mb-2 overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-all hover:scale-[1.01] bg-surface/50 backdrop-blur-sm">
-                                  <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent z-10 flex justify-between items-center opacity-0 group-hover/generated:opacity-100 transition-opacity">
-                                    <div className="flex items-center gap-2">
-                                      <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                                      <span className="text-[10px] font-bold text-white uppercase tracking-widest">AI Generated Asset</span>
-                                    </div>
-                                  </div>
-                                  <img
-                                    {...props}
-                                    className="w-full max-w-full h-auto rounded-xl bg-black/5"
-                                    loading="lazy"
-                                    onError={(e) => {
-                                      e.target.src = 'https://placehold.co/600x400?text=Image+Generating...';
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/generated:opacity-100 transition-opacity pointer-events-none" />
-                                  <button
-                                    onClick={() => handleDownload(props.src, 'aisa-generated.png')}
-                                    className="absolute bottom-3 right-3 p-2.5 bg-primary text-white rounded-xl opacity-0 group-hover/generated:opacity-100 transition-all hover:bg-primary/90 shadow-lg border border-white/20 scale-90 group-hover/generated:scale-100"
-                                    title="Download High-Res"
-                                  >
-                                    <div className="flex items-center gap-2 px-1">
-                                      <Download className="w-4 h-4" />
-                                      <span className="text-[10px] font-bold uppercase">Download</span>
-                                    </div>
-                                  </button>
-                                </div>
-                              )
+                      {editingMessageId === msg.id ? (
+                        <div className="flex flex-col gap-2 min-w-[200px] w-full mt-1">
+                          <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full bg-black/20 text-maintext dark:text-white rounded-lg p-3 text-sm focus:outline-none resize-none border border-white/10 ring-1 ring-white/5"
+                            rows={3}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                saveEdit(msg);
+                              }
+                              if (e.key === 'Escape') cancelEdit();
                             }}
-                          >
-                            {msg.content}
-                          </ReactMarkdown>
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={cancelEdit} className="text-subtext hover:text-maintext text-xs px-2 py-1 rounded hover:bg-black/5 transition-colors">Cancel</button>
+                            <button onClick={() => saveEdit(msg)} className="bg-primary text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors shadow-sm">Save</button>
+                          </div>
                         </div>
+                      ) : (
+                        msg.content && (
+                          <div className={`prose prose-invert max-w-none ${msg.role === 'user' ? 'text-white' : 'text-maintext'}`}>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => <p className="mb-0">{children}</p>,
+                                img: ({ node, ...props }) => (
+                                  <div className="relative group/generated mt-4 mb-2 overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-all hover:scale-[1.01] bg-surface/50 backdrop-blur-sm">
+                                    <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent z-10 flex justify-between items-center opacity-0 group-hover/generated:opacity-100 transition-opacity">
+                                      <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">AI Generated Asset</span>
+                                      </div>
+                                    </div>
+                                    <img
+                                      {...props}
+                                      className="w-full max-w-full h-auto rounded-xl bg-black/5"
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        e.target.src = 'https://placehold.co/600x400?text=Image+Generating...';
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/generated:opacity-100 transition-opacity pointer-events-none" />
+                                    <button
+                                      onClick={() => handleDownload(props.src, 'aisa-generated.png')}
+                                      className="absolute bottom-3 right-3 p-2.5 bg-primary text-white rounded-xl opacity-0 group-hover/generated:opacity-100 transition-all hover:bg-primary/90 shadow-lg border border-white/20 scale-90 group-hover/generated:scale-100"
+                                      title="Download High-Res"
+                                    >
+                                      <div className="flex items-center gap-2 px-1">
+                                        <Download className="w-4 h-4" />
+                                        <span className="text-[10px] font-bold uppercase">Download</span>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )
+                              }}
+                            >
+                              {msg.content}
+                            </ReactMarkdown>
+                          </div>
+                        )
                       )}
                     </div>
                     <span className="text-[10px] text-subtext mt-1 px-1">
@@ -834,11 +1237,11 @@ const Chat = () => {
 
                     <div className="absolute -top-2 -right-2 flex gap-1">
                       <button
-                        onClick={() => toast.success('Image Editor coming soon! You can currently ask the AI about this image.')}
+                        onClick={() => setIsEditingImage(true)}
                         className="p-1.5 bg-surface border border-border text-subtext hover:text-primary rounded-full hover:bg-primary/10 transition-colors shadow-sm"
                         title="Edit image"
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <Wand2 className="w-3 h-3" />
                       </button>
                       <button
                         onClick={handleRemoveFile}
@@ -868,7 +1271,6 @@ const Chat = () => {
                 ref={uploadInputRef}
                 onChange={handleFileSelect}
                 className="hidden"
-                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
               />
               <input
                 id="drive-upload"
@@ -876,7 +1278,6 @@ const Chat = () => {
                 ref={driveInputRef}
                 onChange={handleFileSelect}
                 className="hidden"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf"
               />
               <input
                 id="photos-upload"
@@ -885,6 +1286,14 @@ const Chat = () => {
                 onChange={handleFileSelect}
                 className="hidden"
                 accept="image/*"
+              />
+              <input
+                id="camera-upload"
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*"
+                capture="environment"
               />
 
               <AnimatePresence>
@@ -898,6 +1307,17 @@ const Chat = () => {
                     className="absolute bottom-full left-0 mb-3 w-60 bg-surface border border-border/50 rounded-2xl shadow-xl overflow-hidden z-30 backdrop-blur-md ring-1 ring-black/5"
                   >
                     <div className="p-1.5 space-y-0.5">
+                      <label
+                        htmlFor="camera-upload"
+                        onClick={() => setTimeout(() => setIsAttachMenuOpen(false), 500)}
+                        className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
+                          <Camera className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                        </div>
+                        <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Camera & Scan</span>
+                      </label>
+
                       <label
                         htmlFor="file-upload"
                         onClick={() => setIsAttachMenuOpen(false)}
@@ -920,17 +1340,6 @@ const Chat = () => {
                         <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Add from Drive</span>
                       </label>
 
-                      <label
-                        htmlFor="photos-upload"
-                        onClick={() => setIsAttachMenuOpen(false)}
-                        className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
-                          <ImageIcon className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
-                        </div>
-                        <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Photos</span>
-                      </label>
-
 
                     </div>
                   </motion.div>
@@ -941,11 +1350,8 @@ const Chat = () => {
                 type="button"
                 ref={attachBtnRef}
                 onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
-                className={`p-3 sm:p-4 rounded-full border transition-all duration-300 shadow-sm shrink-0 flex items-center justify-center
-                  ${isAttachMenuOpen
-                    ? 'bg-primary text-white border-primary rotate-45 shadow-primary/20 shadow-lg'
-                    : 'bg-surface border-border text-subtext hover:text-primary hover:bg-primary/5'
-                  }`}
+                className={`p-3 sm:p-4 rounded-full border border-primary bg-primary text-white transition-all duration-300 shadow-lg shadow-primary/20 shrink-0 flex items-center justify-center hover:opacity-90
+                  ${isAttachMenuOpen ? 'rotate-45' : ''}`}
                 title="Add to chat"
               >
                 <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -978,12 +1384,22 @@ const Chat = () => {
                   )}
                   <button
                     type="button"
+                    onClick={() => setIsLiveMode(true)}
+                    className="p-2 sm:p-2.5 rounded-full text-primary hover:bg-primary/10 hover:border-primary/20 transition-all flex items-center justify-center mr-1 border border-transparent"
+                    title="Live Video Call"
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleVoiceInput}
                     className={`p-2 sm:p-2.5 rounded-full transition-all flex items-center justify-center border border-transparent ${isListening ? 'bg-primary text-white animate-pulse shadow-md shadow-primary/30' : 'text-primary hover:bg-primary/10 hover:border-primary/20'}`}
                     title="Voice Input"
                   >
                     <Mic className="w-5 h-5" />
                   </button>
+
                   <button
                     type="submit"
                     disabled={(!inputValue.trim() && !selectedFile) || isLoading}
@@ -997,6 +1413,15 @@ const Chat = () => {
           </div>
         </div>
       </div>
+      {/* Live AI Modal */}
+      <AnimatePresence>
+        {isLiveMode && (
+          <LiveAI
+            onClose={() => setIsLiveMode(false)}
+            language={currentLang}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

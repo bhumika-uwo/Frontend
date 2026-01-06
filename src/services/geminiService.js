@@ -35,9 +35,12 @@ export const generateChatResponse = async (history, currentMessage, systemInstru
             };
         }
 
+        // Limit history to last 50 messages to prevent token overflow in unlimited chats
+        const recentHistory = history.length > 50 ? history.slice(-50) : history;
+
         const payload = {
             content: currentMessage,
-            history: history,
+            history: recentHistory,
             systemInstruction: combinedSystemInstruction,
             image: image,
             document: document
