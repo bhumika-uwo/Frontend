@@ -623,11 +623,35 @@ For "Remix" requests with an attachment, analyze the attached image, then create
           onclone: (clonedDoc) => {
             const clonedEl = clonedDoc.getElementById(`msg-text-${msg.id}`);
             if (clonedEl) {
-              clonedEl.style.color = '#000000'; // Force black text
-              // Force children to black too
+              clonedEl.style.color = '#000000';
+              clonedEl.style.backgroundColor = '#ffffff';
+              clonedEl.style.padding = '60px'; // Larger internal padding for PDF page look
+              clonedEl.style.margin = '0';
+              clonedEl.style.width = '800px'; // Set a fixed width for consistent rendering
+              clonedEl.style.whiteSpace = 'normal'; // Essential for markdown
+
               const allElements = clonedEl.querySelectorAll('*');
               allElements.forEach(el => {
                 el.style.color = '#000000';
+                el.style.margin = '0';
+                el.style.padding = '0';
+                el.style.lineHeight = '1.4'; // Slightly roomier for standard PDF look
+
+                if (el.tagName === 'P') {
+                  el.style.marginBottom = '6px'; // Standard paragraph gap for PDF
+                }
+                if (el.tagName === 'UL' || el.tagName === 'OL') {
+                  el.style.paddingLeft = '30px';
+                  el.style.marginBottom = '8px';
+                }
+                if (el.tagName === 'LI') {
+                  el.style.marginBottom = '2px';
+                }
+                if (el.tagName.match(/^H[1-6]$/)) {
+                  el.style.marginTop = '12px';
+                  el.style.marginBottom = '4px';
+                  el.style.fontWeight = 'bold';
+                }
               });
             }
           }
@@ -645,13 +669,12 @@ For "Remix" requests with an attachment, analyze the attached image, then create
       });
 
       const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const margin = 15; // Standard 15mm margin
+      const pdfWidth = pdf.internal.pageSize.getWidth() - (margin * 2);
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-      // Add image to PDF. If height > page, basic scaling (simple version)
-      // For very long chats, multipage logic would be needed but complex. 
-      // We'll stick to a single long image or fit-to-width for now.
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Add image to PDF with margins
+      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth, pdfHeight);
 
       const filename = `aisa-response-${msg.id}.pdf`;
 
@@ -1230,7 +1253,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-6 space-y-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-5 space-y-2.5 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-70 px-4">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full flex items-center justify-center mb-6">
@@ -1272,7 +1295,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                       } max-w-[85%] sm:max-w-[80%]`}
                   >
                     <div
-                      className={`group/bubble relative px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm w-fit max-w-full ${msg.role === 'user'
+                      className={`group/bubble relative px-3 py-1.5 md:px-4 md:py-2 rounded-2xl text-sm leading-normal whitespace-pre-wrap break-words shadow-sm w-fit max-w-full ${msg.role === 'user'
                         ? 'bg-primary text-white rounded-tr-none'
                         : 'bg-surface border border-border text-maintext rounded-tl-none'
                         }`}
@@ -1397,17 +1420,17 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                         </div>
                       ) : (
                         msg.content && (
-                          <div id={`msg-text-${msg.id}`} className={`prose max-w-full break-words prose-p:my-0 prose-headings:my-0 prose-ul:my-0 prose-li:my-0 [&_li_p]:m-0 [&_li]:m-0 ${msg.role === 'user' ? 'prose-invert text-white' : 'text-maintext'}`}>
+                          <div id={`msg-text-${msg.id}`} className={`max-w-full break-words text-sm md:text-base leading-normal whitespace-normal ${msg.role === 'user' ? 'text-white' : 'text-maintext'}`}>
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               components={{
-                                p: ({ children }) => <p className="mb-0 !my-0 leading-snug">{children}</p>,
-                                ul: ({ children }) => <ul className="list-disc pl-4 !my-0 !space-y-0 marker:text-subtext leading-snug">{children}</ul>,
-                                ol: ({ children }) => <ol className="list-decimal pl-4 !my-0 !space-y-0 marker:text-subtext leading-snug">{children}</ol>,
-                                li: ({ children }) => <li className="!my-0 !py-0 leading-snug pl-1">{children}</li>,
-                                h1: ({ children }) => <h1 className="text-lg font-bold mt-2 mb-0.5 leading-tight">{children}</h1>,
-                                h2: ({ children }) => <h2 className="text-base font-bold mt-2 mb-0.5 leading-tight">{children}</h2>,
-                                h3: ({ children }) => <h3 className="text-sm font-bold mt-1 mb-0 leading-tight">{children}</h3>,
+                                p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                                ul: ({ children }) => <ul className="list-disc pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ol>,
+                                li: ({ children }) => <li className="mb-1 last:mb-0">{children}</li>,
+                                h1: ({ children }) => <h1 className="text-base font-bold mb-2 mt-3 block">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-sm font-bold mb-1.5 mt-2 block">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-xs font-bold mb-1 mt-1.5 block">{children}</h3>,
                                 strong: ({ children }) => <strong className="font-bold text-primary">{children}</strong>,
                                 code: ({ node, inline, className, children, ...props }) => {
                                   const match = /language-(\w+)/.exec(className || '');
@@ -1578,7 +1601,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                         </div>
                       )}
                     </div>
-                    <span className="text-[10px] text-subtext mt-1 px-1">
+                    <span className="text-[10px] text-subtext mt-0 px-1">
                       {new Date(msg.timestamp).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',

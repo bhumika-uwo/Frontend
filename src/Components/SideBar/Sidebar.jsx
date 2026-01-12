@@ -288,71 +288,41 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-3 border-t border-border bg-secondary/30 relative">
           {token ? (
             /* Integrated Profile Card */
-            <div className={`rounded-2xl border transition-all duration-300 overflow-hidden ${isProfileOpen ? 'bg-card border-border shadow-md' : 'border-transparent hover:bg-secondary'}`}>
-              {/* Header / Toggle */}
-              <div className="flex items-center gap-1 group">
-                <div
-                  className="flex-1 flex items-center gap-2 p-2 rounded-xl transition-all"
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                >
-                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0 overflow-hidden border border-primary/10">
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          // Fallback to text initial
-                          const parent = e.target.parentElement;
-                          if (parent) {
-                            parent.classList.add("flex", "items-center", "justify-center");
-                            parent.innerText = user.name ? user.name.charAt(0).toUpperCase() : "U";
-                          }
-                        }}
-                      />
-                    ) : (
-                      user.name ? user.name.charAt(0).toUpperCase() : "U"
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-bold text-maintext truncate">{user.name}</p>
-                    <p className="text-[11px] text-subtext truncate">{user.email}</p>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className={`p-3 cursor-pointer transition-transform duration-300 ${isProfileOpen ? 'rotate-180 text-primary' : 'text-subtext group-hover:text-maintext'}`}
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </div>
+            <div
+              onClick={() => {
+                navigate(AppRoute.PROFILE);
+                onClose();
+              }}
+              className="rounded-xl border border-transparent hover:bg-secondary transition-all cursor-pointer flex items-center gap-2 p-2 group"
+            >
+              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0 overflow-hidden border border-primary/10 group-hover:bg-primary/30 transition-colors">
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      const parent = e.target.parentElement;
+                      if (parent) {
+                        parent.classList.add("flex", "items-center", "justify-center");
+                        parent.innerText = user.name ? user.name.charAt(0).toUpperCase() : "U";
+                      }
+                    }}
+                  />
+                ) : (
+                  user.name ? user.name.charAt(0).toUpperCase() : "U"
+                )}
               </div>
 
-              {/* Expandable Menu */}
-              <AnimatePresence>
-                {isProfileOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="px-2 pb-2">
-                      <div className="h-[1px] bg-border/40 mx-2 mb-2" />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-bold text-maintext truncate group-hover:text-primary transition-colors">{user.name}</p>
+                <p className="text-[11px] text-subtext truncate">{user.email}</p>
+              </div>
 
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-red-600 dark:text-red-400 bg-red-500/5 hover:bg-red-500/10 transition-all text-[13px] font-medium"
-                      >
-                        <LogOut className="w-4 h-4 shrink-0" />
-                        <span>{t('logOut')}</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <div className="text-subtext group-hover:text-primary transition-colors">
+                <User className="w-4 h-4" />
+              </div>
             </div>
           ) : (
             /* Guest / Login State */

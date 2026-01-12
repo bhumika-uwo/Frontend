@@ -243,7 +243,7 @@ const LiveAI = ({ onClose, language }) => {
                 autoPlay
                 playsInline
                 muted
-                className={`flex-1 w-full h-full object-cover transition-opacity duration-500 ${isVideoActive ? 'opacity-100' : 'opacity-0'}`}
+                className={`flex-1 w-full h-full object-cover transition-all duration-500 ${isVideoActive ? 'opacity-100' : 'opacity-0'} ${facingMode === 'user' ? '-scale-x-100' : ''}`}
             />
 
             {/* Placeholder when video is off */}
