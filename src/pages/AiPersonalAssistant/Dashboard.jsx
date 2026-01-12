@@ -162,29 +162,29 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] p-4 md:p-8 lg:p-10 font-sans transition-all">
-            <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] p-3 md:p-6 lg:p-8 font-sans transition-all">
+            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
 
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                             AI Personal Assistant
                         </h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm md:text-base">Manage your daily routine & smart reminders</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Manage your daily routine & smart reminders</p>
                     </div>
                     <button
                         onClick={() => { setEditingTask(null); setIsModalOpen(true); }}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-2xl font-medium shadow-lg shadow-primary/20 transition-all hover:-translate-y-1 active:scale-95"
+                        className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium shadow-lg shadow-primary/20 transition-all hover:-translate-y-1 active:scale-95 text-sm"
                     >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-4 h-4" />
                         New Task
                     </button>
                 </div>
 
                 {/* Stats / Dashboard */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-blue-500 relative overflow-hidden group hover:shadow-lg transition-all">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-blue-500 relative overflow-hidden group hover:shadow-lg transition-all">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                             <CalendarIcon className="w-14 h-14 md:w-16 md:h-16 text-blue-500" />
                         </div>
@@ -194,32 +194,32 @@ const Dashboard = () => {
                         </h3>
                     </div>
 
-                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-orange-500 relative overflow-hidden group hover:shadow-lg transition-all">
+                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-orange-500 relative overflow-hidden group hover:shadow-lg transition-all">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Clock className="w-14 h-14 md:w-16 md:h-16 text-orange-500" />
+                            <Clock className="w-12 h-12 md:w-14 md:h-14 text-orange-500" />
                         </div>
-                        <p className="text-gray-500 text-sm font-medium">Pending</p>
-                        <h3 className="text-3xl md:text-4xl font-bold text-orange-500 mt-2">
+                        <p className="text-gray-500 text-xs md:text-sm font-medium">Pending</p>
+                        <h3 className="text-2xl md:text-3xl font-bold text-orange-500 mt-1">
                             {tasks.filter(t => t.status === 'pending' || t.status === 'missed').length}
                         </h3>
                     </div>
 
-                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-green-500 relative overflow-hidden group hover:shadow-lg transition-all">
+                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-green-500 relative overflow-hidden group hover:shadow-lg transition-all">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <CheckCircle className="w-14 h-14 md:w-16 md:h-16 text-green-500" />
+                            <CheckCircle className="w-12 h-12 md:w-14 md:h-14 text-green-500" />
                         </div>
-                        <p className="text-gray-500 text-sm font-medium">Completed</p>
-                        <h3 className="text-3xl md:text-4xl font-bold text-green-500 mt-2">
+                        <p className="text-gray-500 text-xs md:text-sm font-medium">Completed</p>
+                        <h3 className="text-2xl md:text-3xl font-bold text-green-500 mt-1">
                             {tasks.filter(t => t.status === 'completed').length}
                         </h3>
                     </div>
 
-                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-primary relative overflow-hidden group hover:shadow-lg transition-all">
+                    <div className="bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-xl p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 border-t-4 border-t-primary relative overflow-hidden group hover:shadow-lg transition-all">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Settings className="w-14 h-14 md:w-16 md:h-16 text-primary" />
+                            <Settings className="w-12 h-12 md:w-14 md:h-14 text-primary" />
                         </div>
-                        <p className="text-gray-500 text-sm font-medium">Total Routines</p>
-                        <h3 className="text-3xl md:text-4xl font-bold text-primary mt-2">
+                        <p className="text-gray-500 text-xs md:text-sm font-medium">Total Routines</p>
+                        <h3 className="text-2xl md:text-3xl font-bold text-primary mt-1">
                             {tasks.length}
                         </h3>
                     </div>
@@ -258,8 +258,8 @@ const Dashboard = () => {
                             acc[cat].push(task);
                             return acc;
                         }, {})).map(([category, items]) => (
-                            <div key={category} className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center gap-3 mb-4 pl-2">
+                            <div key={category} className="mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex items-center gap-2 mb-2 pl-1">
                                     <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1E1E1E] shadow-sm flex items-center justify-center text-xl border border-gray-100 dark:border-gray-800">
                                         {{
                                             'Personal': '👤',
@@ -282,7 +282,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="grid gap-4">
                                     {items.map(task => (
-                                        <div key={task._id} className={`group bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-sm p-4 lg:p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-4 transition-all hover:shadow-xl hover:scale-[1.005] hover:border-primary/30 ${task.isUrgent ? 'border-l-4 border-l-red-500 bg-red-50/30' : ''}`}>
+                                        <div key={task._id} className={`group bg-white/80 dark:bg-[#1A1A1A]/90 backdrop-blur-sm p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-3 transition-all hover:shadow-md hover:scale-[1.002] hover:border-primary/30 ${task.isUrgent ? 'border-l-4 border-l-red-500 bg-red-50/30' : ''}`}>
 
                                             <button
                                                 onClick={() => toggleComplete(task)}

@@ -17,6 +17,8 @@
     "axios": "^1.13.2",
     "crypto-js": "^4.2.0",
     "docx-preview": "^0.3.7",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.0.0",
     "lucide-react": "^0.556.0",
     "mammoth": "^1.11.0",
     "motion": "^12.23.26",

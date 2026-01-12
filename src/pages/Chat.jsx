@@ -17,6 +17,8 @@ import LiveAI from '../Components/LiveAI';
 import ImageEditor from '../Components/ImageEditor';
 import axios from 'axios';
 import { apis } from '../types';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 const FEEDBACK_PROMPTS = [
@@ -599,6 +601,95 @@ For "Remix" requests with an attachment, analyze the attached image, then create
   const [feedbackCategory, setFeedbackCategory] = useState([]);
   const [activeMessageId, setActiveMessageId] = useState(null);
   const [feedbackDetails, setFeedbackDetails] = useState("");
+  const [pdfLoadingId, setPdfLoadingId] = useState(null);
+
+  const handlePdfAction = async (action, msg) => {
+    setPdfLoadingId(msg.id);
+    try {
+      const element = document.getElementById(`msg-text-${msg.id}`);
+      if (!element) {
+        toast.error("Content not found");
+        return;
+      }
+
+      // Temporarily modify styles for better print capture (e.g. forced light mode)
+      let canvas;
+      try {
+        canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff', // White background for PDF
+          onclone: (clonedDoc) => {
+            const clonedEl = clonedDoc.getElementById(`msg-text-${msg.id}`);
+            if (clonedEl) {
+              clonedEl.style.color = '#000000'; // Force black text
+              // Force children to black too
+              const allElements = clonedEl.querySelectorAll('*');
+              allElements.forEach(el => {
+                el.style.color = '#000000';
+              });
+            }
+          }
+        });
+      } catch (genError) {
+        console.error("html2canvas error:", genError);
+        throw new Error("Failed to render PDF content: " + genError.message);
+      }
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      // Add image to PDF. If height > page, basic scaling (simple version)
+      // For very long chats, multipage logic would be needed but complex. 
+      // We'll stick to a single long image or fit-to-width for now.
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      const filename = `aisa-response-${msg.id}.pdf`;
+
+      if (action === 'download') {
+        pdf.save(filename);
+        toast.success("PDF Downloaded");
+      } else if (action === 'open') {
+        window.open(pdf.output('bloburl'), '_blank');
+      } else if (action === 'share') {
+        const blob = pdf.output('blob');
+        const file = new File([blob], filename, { type: 'application/pdf' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'AI Response',
+              text: 'Here is the response from A-Series AI.'
+            });
+          } catch (shareErr) {
+            if (shareErr.name !== 'AbortError') {
+              console.error(shareErr);
+              pdf.save(filename); // Fallback
+              toast("Sharing failed, downloaded instead");
+            }
+          }
+        } else {
+          pdf.save(filename);
+          toast("Sharing not supported, downloaded instead.");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setPdfLoadingId(null);
+    }
+  };
 
   // Auto-resize chat input textarea
   useEffect(() => {
@@ -1019,14 +1110,20 @@ For "Remix" requests with an attachment, analyze the attached image, then create
 
       <div
         className={`
-          w-full lg:w-72 bg-surface border-r border-border flex flex-col flex-shrink-0
-          absolute inset-y-0 left-0 z-50 transition-transform duration-300
-          lg:relative lg:translate-x-0
-          ${showHistory ? 'translate-x-0' : '-translate-x-full'}
+          flex flex-col flex-shrink-0 bg-surface border-r border-border
+          transition-all duration-300 ease-in-out
+          
+          /* Mobile: Absolute overlay */
+          absolute inset-y-0 left-0 z-50 w-full sm:w-72
+          ${showHistory ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+
+          /* Desktop: Relative flow, animate width instead of transform */
+          lg:relative lg:inset-auto lg:shadow-none lg:translate-x-0
+          ${showHistory ? 'lg:w-72' : 'lg:w-0 lg:border-none lg:overflow-hidden'}
         `}
       >
-        <div className="p-4">
-          <div className="flex justify-between items-center mb-4 lg:hidden">
+        <div className="p-3">
+          <div className="flex justify-between items-center mb-3 lg:hidden">
             <span className="font-bold text-lg text-maintext">History</span>
             <button
               onClick={() => setShowHistory(false)}
@@ -1038,9 +1135,9 @@ For "Remix" requests with an attachment, analyze the attached image, then create
 
           <button
             onClick={handleNewChat}
-            className="w-full bg-primary hover:opacity-90 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-primary/20"
+            className="w-full bg-primary hover:opacity-90 text-white font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-primary/20 text-sm"
           >
-            <Plus className="w-5 h-5" /> New Chat
+            <Plus className="w-4 h-4" /> New Chat
           </button>
         </div>
 
@@ -1096,11 +1193,11 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         )}
 
         {/* Header */}
-        <div className="h-16 border-b border-border flex items-center justify-between px-4 sm:px-6 bg-secondary z-10 shrink-0 gap-2">
+        <div className="h-12 md:h-14 border-b border-border flex items-center justify-between px-3 md:px-4 bg-secondary z-10 shrink-0 gap-2">
           <div className="flex items-center gap-2 min-w-0">
 
             <button
-              className="lg:hidden p-2 -ml-2 text-subtext hover:text-maintext shrink-0"
+              className="p-2 -ml-2 text-subtext hover:text-maintext shrink-0"
               onClick={() => setShowHistory(!showHistory)}
             >
               <History className="w-5 h-5" />
@@ -1133,7 +1230,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-6 space-y-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-70 px-4">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full flex items-center justify-center mb-6">
@@ -1151,7 +1248,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`group relative flex items-start gap-3 sm:gap-4 max-w-4xl mx-auto cursor-pointer ${msg.role === 'user' ? 'flex-row-reverse' : ''
+                  className={`group relative flex items-start gap-2 md:gap-3 max-w-4xl mx-auto cursor-pointer ${msg.role === 'user' ? 'flex-row-reverse' : ''
                     }`}
                   onClick={() => setActiveMessageId(activeMessageId === msg.id ? null : msg.id)}
                 >
@@ -1300,18 +1397,25 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                         </div>
                       ) : (
                         msg.content && (
-                          <div className={`prose max-w-full break-words prose-p:my-0.5 prose-headings:my-1 prose-ul:my-0 prose-li:my-0 ${msg.role === 'user' ? 'prose-invert text-white' : 'text-maintext'}`}>
+                          <div id={`msg-text-${msg.id}`} className={`prose max-w-full break-words prose-p:my-0 prose-headings:my-0 prose-ul:my-0 prose-li:my-0 [&_li_p]:m-0 [&_li]:m-0 ${msg.role === 'user' ? 'prose-invert text-white' : 'text-maintext'}`}>
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               components={{
-                                p: ({ children }) => <p className="mb-0.5 last:mb-0 leading-relaxed">{children}</p>,
+                                p: ({ children }) => <p className="mb-0 !my-0 leading-snug">{children}</p>,
+                                ul: ({ children }) => <ul className="list-disc pl-4 !my-0 !space-y-0 marker:text-subtext leading-snug">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal pl-4 !my-0 !space-y-0 marker:text-subtext leading-snug">{children}</ol>,
+                                li: ({ children }) => <li className="!my-0 !py-0 leading-snug pl-1">{children}</li>,
+                                h1: ({ children }) => <h1 className="text-lg font-bold mt-2 mb-0.5 leading-tight">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-base font-bold mt-2 mb-0.5 leading-tight">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-sm font-bold mt-1 mb-0 leading-tight">{children}</h3>,
+                                strong: ({ children }) => <strong className="font-bold text-primary">{children}</strong>,
                                 code: ({ node, inline, className, children, ...props }) => {
                                   const match = /language-(\w+)/.exec(className || '');
                                   const lang = match ? match[1] : '';
 
                                   if (!inline && match) {
                                     return (
-                                      <div className="rounded-xl overflow-hidden my-4 border border-border bg-[#1e1e1e] shadow-md w-full max-w-full">
+                                      <div className="rounded-xl overflow-hidden my-2 border border-border bg-[#1e1e1e] shadow-md w-full max-w-full">
                                         <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#404040]">
                                           <span className="text-xs font-mono text-gray-300 lowercase">{lang}</span>
                                           <button
@@ -1408,10 +1512,68 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                             <button
                               onClick={() => handleShare(msg.content)}
                               className="text-subtext hover:text-primary transition-colors"
-                              title="Share"
+                              title="Share Text"
                             >
                               <Share className="w-4 h-4" />
                             </button>
+
+                            {/* PDF Menu */}
+                            <Menu as="div" className="relative inline-block text-left">
+                              <Menu.Button className="text-subtext hover:text-red-500 transition-colors flex items-center" disabled={pdfLoadingId === msg.id}>
+                                {pdfLoadingId === msg.id ? (
+                                  <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                                ) : (
+                                  <FileText className="w-4 h-4" />
+                                )}
+                              </Menu.Button>
+                              <Transition
+                                as={Fragment}
+                                enter="transition ease-out duration-100"
+                                enterFrom="transform opacity-0 scale-95"
+                                enterTo="transform opacity-100 scale-100"
+                                leave="transition ease-in duration-75"
+                                leaveFrom="transform opacity-100 scale-100"
+                                leaveTo="transform opacity-0 scale-95"
+                              >
+                                <Menu.Items className="absolute bottom-full left-0 mb-2 w-36 origin-bottom-left divide-y divide-border rounded-xl bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden">
+                                  <div className="px-1 py-1">
+                                    <Menu.Item>
+                                      {({ active }) => (
+                                        <button
+                                          onClick={() => handlePdfAction('open', msg)}
+                                          className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                            } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                        >
+                                          Open PDF
+                                        </button>
+                                      )}
+                                    </Menu.Item>
+                                    <Menu.Item>
+                                      {({ active }) => (
+                                        <button
+                                          onClick={() => handlePdfAction('download', msg)}
+                                          className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                            } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                        >
+                                          Download
+                                        </button>
+                                      )}
+                                    </Menu.Item>
+                                    <Menu.Item>
+                                      {({ active }) => (
+                                        <button
+                                          onClick={() => handlePdfAction('share', msg)}
+                                          className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                            } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                        >
+                                          Share PDF
+                                        </button>
+                                      )}
+                                    </Menu.Item>
+                                  </div>
+                                </Menu.Items>
+                              </Transition>
+                            </Menu>
                           </div>
                         </div>
                       )}
@@ -1494,7 +1656,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         </div>
 
         {/* Input */}
-        <div className="p-4 sm:p-6 shrink-0 bg-secondary border-t border-border sm:border-t-0">
+        <div className="p-2 md:p-4 shrink-0 bg-secondary border-t border-border sm:border-t-0">
           <div className="max-w-4xl mx-auto relative">
 
             {/* File Preview Area */}
@@ -1664,8 +1826,8 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                   onPaste={handlePaste}
                   placeholder="Ask AISA..."
                   rows={1}
-                  className={`w-full bg-surface border border-border rounded-3xl py-3.5 sm:py-4 pl-4 sm:pl-6 text-sm sm:text-base text-maintext placeholder-subtext focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm transition-all resize-none overflow-y-auto custom-scrollbar ${inputValue.trim() ? 'pr-12 sm:pr-16' : 'pr-40 sm:pr-44'}`}
-                  style={{ minHeight: '52px', maxHeight: '150px' }}
+                  className={`w-full bg-surface border border-border rounded-2xl py-2 md:py-3 pl-4 sm:pl-5 text-sm md:text-base text-maintext placeholder-subtext focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm transition-all resize-none overflow-y-auto custom-scrollbar ${inputValue.trim() ? 'pr-10 md:pr-12' : 'pr-32 md:pr-40'}`}
+                  style={{ minHeight: '40px', maxHeight: '150px' }}
                 />
                 <div className="absolute right-2 inset-y-0 flex items-center gap-0 sm:gap-1 z-10">
                   {isListening && (
