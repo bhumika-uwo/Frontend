@@ -25,7 +25,8 @@ import {
 import { useNavigate, useLocation } from 'react-router';
 import { AppRoute, apis } from '../types';
 import axios from 'axios';
-import { getUserData, clearUser, setUserData } from '../userStore/userData';
+import { getUserData, clearUser, setUserData, userData } from '../userStore/userData';
+import { useRecoilState } from 'recoil';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
@@ -169,11 +170,40 @@ const Profile = () => {
     const [isEditing, setIsEditing] = React.useState(false);
     const [editForm, setEditForm] = React.useState({ name: user.name, email: user.email });
 
-    const handleSaveProfile = () => {
-        const updatedUser = { ...user, name: editForm.name };
-        setUserData(updatedUser);
-        setIsEditing(false);
-        window.location.reload();
+    const [currentUserData, setUserRecoil] = useRecoilState(userData);
+
+    const handleSaveProfile = async () => {
+        const loadingToast = toast.loading("Updating profile...");
+        try {
+            const updatedUser = { ...user, name: editForm.name };
+
+            // 1. Update Backend
+            if (user?.token) {
+                await axios.put(apis.user, { name: editForm.name }, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+            }
+
+            // 2. Update Local Storage
+            setUserData(updatedUser);
+
+            // 3. Update Recoil Atom (Triggers Sidebar update)
+            setUserRecoil(prev => ({ ...prev, user: updatedUser }));
+
+            setIsEditing(false);
+            toast.dismiss(loadingToast);
+            toast.success("Profile updated successfully!");
+
+        } catch (error) {
+            console.error("Failed to update profile", error);
+            toast.dismiss(loadingToast);
+
+            // Revert changes if needed or show error
+            toast.error("Failed to save changes to server.");
+
+            // Optional: If backend fails, we might want to revert the local change? 
+            // For now, we'll assume the user wants to keep their edit locally or try again.
+        }
     };
 
     const [preferences, setPreferences] = React.useState({

@@ -4,6 +4,13 @@ const getAvatarUrl = (user) => {
   if (!user || !user.email) return "";
   const encodedName = encodeURIComponent(user.name || "User");
   const fallbackUrl = `https://ui-avatars.com/api/?name=${encodedName}&background=random&color=fff`;
+
+  // If it's a Gmail address, specifically ask for the Google avatar
+  if (user.email.toLowerCase().includes('@gmail.com')) {
+    return `https://unavatar.io/google/${user.email}?fallback=${encodeURIComponent(fallbackUrl)}`;
+  }
+
+  // Default to generic for others
   return `https://unavatar.io/${user.email}?fallback=${encodeURIComponent(fallbackUrl)}`;
 };
 

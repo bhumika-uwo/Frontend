@@ -227,61 +227,16 @@ const Sidebar = ({ isOpen, onClose }) => {
             <Settings className="w-5 h-5" />
             <span>{t('adminDashboard')}</span>
           </NavLink>
-        </div>
 
-        {/* Notifications Section */}
-        <div className="px-4 py-2 mt-4">
-          <NavLink
-            to={AppRoute.NOTIFICATIONS}
-            className="flex items-center gap-2 mb-3 px-2 group cursor-pointer"
-            onClick={onClose}
-          >
-            <Bell className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold text-subtext uppercase tracking-wider group-hover:text-primary transition-colors">{t('updates')}</span>
-            {notifications.some(n => !n.isRead) && (
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            )}
+          <NavLink to={AppRoute.NOTIFICATIONS} className={navItemClass} onClick={onClose}>
+            <div className="relative">
+              <Bell className="w-5 h-5" />
+              {notifications.some(n => !n.isRead) && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-secondary animate-pulse"></span>
+              )}
+            </div>
+            <span>{t('updates') || 'Updates'}</span>
           </NavLink>
-
-          <div className="space-y-2 max-h-40 overflow-y-auto scrollbar-none">
-            {(() => {
-              // Check settings directly from localStorage to ensure immediate feedback
-              const settings = JSON.parse(localStorage.getItem('user_settings') || '{}');
-              const showNotifications = settings.pushNotif !== false; // Default to true if not set
-
-              if (!showNotifications) {
-                return (
-                  <div className="p-4 text-center text-xs text-subtext italic opacity-60">
-                    Notifications are disabled.
-                  </div>
-                );
-              }
-
-              return notifications.length > 0 ? notifications.map((notif) => (
-                <div
-                  key={notif._id}
-                  className={`p-2 rounded-lg border text-[11px] transition-all ${notif.type === 'ALERT'
-                    ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
-                    : 'bg-card border-border text-subtext'
-                    } ${!notif.isRead ? 'ring-1 ring-primary/20' : 'opacity-80'}`}
-                >
-                  <p className="font-bold mb-1">{notif.title}</p>
-                  <p className="leading-tight">{notif.message}</p>
-                </div>
-              )) : (
-                <div className="p-2 text-center text-xs text-subtext opacity-60">No new notifications</div>
-              );
-            })()}
-          </div>
-          {notifications.length > 0 && (
-            <NavLink
-              to={AppRoute.NOTIFICATIONS}
-              className="mt-2 px-2 text-[10px] font-bold text-primary hover:underline block text-center"
-              onClick={onClose}
-            >
-              View All Notifications
-            </NavLink>
-          )}
         </div>
 
         {/* User Profile Footer */}
