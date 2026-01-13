@@ -21,18 +21,32 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 
-const FEEDBACK_PROMPTS = [
-  "Was this helpful?",
-  "How did I do?",
-  "Is this answer detailed enough?",
-  "Did I answer your question?",
-  "Need anything else?",
-  "Is this what you were looking for?",
-  "Happy to help!",
-  "Let me know if you need more info",
-  "Any other questions?",
-  "Hope this clears things up!"
-];
+const FEEDBACK_PROMPTS = {
+  en: [
+    "Was this helpful?",
+    "How did I do?",
+    "Is this answer detailed enough?",
+    "Did I answer your question?",
+    "Need anything else?",
+    "Is this what you were looking for?",
+    "Happy to help!",
+    "Let me know if you need more info",
+    "Any other questions?",
+    "Hope this clears things up!"
+  ],
+  hi: [
+    "क्या यह मददगार था?",
+    "मैंने कैसा किया?",
+    "क्या यह जवाब पर्याप्त है?",
+    "क्या मैंने आपके सवाल का जवाब दिया?",
+    "कुछ और चाहिए?",
+    "क्या आप यही खोज रहे थे?",
+    "मदद करके खुशी हुई!",
+    "अगर और जानकारी चाहिए तो बताएं",
+    "कोई और सवाल?",
+    "उम्मीद है यह समझ आया!"
+  ]
+};
 
 const Chat = () => {
   const { sessionId } = useParams();
@@ -233,13 +247,20 @@ const Chat = () => {
     }
   };
 
+  const isSendingRef = useRef(false);
+
   const handleSendMessage = async (e, overrideContent) => {
     if (e) e.preventDefault();
+
+    // Prevent duplicate sends (from voice + form race condition)
+    if (isSendingRef.current) return;
 
     // Use overrideContent if provided (for instant voice sending), otherwise fallback to state
     const contentToSend = typeof overrideContent === 'string' ? overrideContent : inputValue.trim();
 
     if ((!contentToSend && !selectedFile) || isLoading) return;
+
+    isSendingRef.current = true;
 
     let activeSessionId = currentSessionId;
     let isFirstMessage = false;
@@ -288,6 +309,13 @@ const Chat = () => {
         const SYSTEM_INSTRUCTION = `
 You are AISA, an advanced AI assistant powered by A-Series.
 
+### CRITICAL LANGUAGE RULE:
+**ALWAYS respond in the SAME LANGUAGE as the user's message.**
+- If user writes in HINDI (Devanagari or Romanized), respond in HINDI.
+- If user writes in ENGLISH, respond in ENGLISH.
+- If user mixes languages, prioritize the dominant language.
+- NEVER say "I cannot understand Hindi" or ask the user to switch languages.
+
 ### RESPONSE FORMATTING RULES (STRICT):
 1.  **Structure**: ALWAYS use **Bold Headings** and **Bullet Points**. Avoid long paragraphs.
 2.  **Point-wise Answers**: Break down complex topics into simple points.
@@ -323,6 +351,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
       toast.error(`Error: ${error.message || "Failed to send message"}`);
     } finally {
       setIsLoading(false);
+      isSendingRef.current = false;
     }
   };
 
@@ -489,8 +518,8 @@ For "Remix" requests with an attachment, analyze the attached image, then create
     };
 
     recognition.lang = langMap[currentLang] || 'en-IN';
-    recognition.continuous = true;
     recognition.interimResults = true;
+    recognition.continuous = false; // Better for cross-device stability and prevents duplication
     recognition.maxAlternatives = 1;
 
     // Capture current input to append to using Ref to avoid stale closures
@@ -507,12 +536,11 @@ For "Remix" requests with an attachment, analyze the attached image, then create
     };
 
     recognition.onend = () => {
-      // Auto-restart logic for the 8-second browser cutoff
+      // Auto-restart logic for silence/timeout
       if (!manualStopRef.current && isListeningRef.current) {
-        // console.log('Auto-restarting speech recognition...');
         setTimeout(() => {
           if (isListeningRef.current) startSpeechRecognition();
-        }, 100);
+        }, 50);
       } else {
         setIsListening(false);
         isListeningRef.current = false;
@@ -521,14 +549,22 @@ For "Remix" requests with an attachment, analyze the attached image, then create
 
     recognition.onresult = (event) => {
       let speechToText = '';
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         speechToText += event.results[i][0].transcript;
       }
 
-      const lowerTranscript = speechToText.toLowerCase();
-      // Auto-send triggers
-      const triggers = ['yes send it', 'send message', 'bhej do', 'send it', 'yes send', 'ok send it', 'ok send', 'send now', 'please send', 'ji bhejo', 'kar do'];
-      const matchedTrigger = triggers.find(t => lowerTranscript.includes(t));
+      if (!speechToText) return;
+
+      const lowerTranscript = speechToText.toLowerCase().trim();
+
+      // Extensive triggers for auto-send
+      const triggers = [
+        'send it', 'send message', 'bhej do', 'yes send it', 'message bhej do',
+        'isey bhej do', 'ok send it', 'ok send', 'send bhej do', 'theek hai bhej do',
+        'send now', 'please send', 'ji bhejo', 'kar do', 'ok bhej do', 'okay send it'
+      ];
+
+      const matchedTrigger = triggers.find(t => lowerTranscript.endsWith(t) || lowerTranscript === t);
 
       if (matchedTrigger) {
         // Stop listening immediately
@@ -537,23 +573,23 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         recognition.stop();
         setIsListening(false);
 
-        // Remove the trigger phrase from the final text
-        // Remove the trigger phrase (and any trailing punctuation) from the final text
-        // We create a regex that matches the trigger, optionally followed by non-word chars (like punctuation)
-        const cleanupRegex = new RegExp(`${matchedTrigger}[\\s.!?]*`, 'gi');
-        let finalText = (sessionBaseText + (sessionBaseText ? ' ' : '') + speechToText).replace(cleanupRegex, '').trim();
+        // Remove the trigger phrase (and any trailing punctuation)
+        const cleanupRegex = new RegExp(`${matchedTrigger}[\\s.!?]*$`, 'gi');
+        let transcriptWithoutTrigger = speechToText.replace(cleanupRegex, '').trim();
 
-        // Update state (visual feedback)
-        setInputValue(finalText);
+        let finalText = (sessionBaseText + (sessionBaseText ? ' ' : '') + transcriptWithoutTrigger).trim();
 
-        toast.success('Voice Command: Sending message...');
-        // Send IMMEDIATELY with explicit content, bypassing state delay
+        toast.success('Voice Command: Sending...');
+
+        // Send IMMEDIATELY then clear everything
         handleSendMessage(null, finalText);
 
+        // Clear input after send
+        setInputValue('');
+        textRef.current = '';
       } else {
-        if (speechToText) {
-          setInputValue(sessionBaseText + (sessionBaseText ? ' ' : '') + speechToText);
-        }
+        // Just update the input box as the user speaks
+        setInputValue(sessionBaseText + (sessionBaseText ? ' ' : '') + speechToText);
       }
     };
 
@@ -619,38 +655,108 @@ For "Remix" requests with an attachment, analyze the attached image, then create
           scale: 2,
           useCORS: true,
           logging: false,
-          backgroundColor: '#ffffff', // White background for PDF
+          backgroundColor: '#ffffff',
           onclone: (clonedDoc) => {
             const clonedEl = clonedDoc.getElementById(`msg-text-${msg.id}`);
             if (clonedEl) {
-              clonedEl.style.color = '#000000';
-              clonedEl.style.backgroundColor = '#ffffff';
-              clonedEl.style.padding = '60px'; // Larger internal padding for PDF page look
-              clonedEl.style.margin = '0';
-              clonedEl.style.width = '800px'; // Set a fixed width for consistent rendering
-              clonedEl.style.whiteSpace = 'normal'; // Essential for markdown
+              const wrapper = clonedDoc.createElement('div');
+              wrapper.style.padding = '60px 70px'; // Professional wide margins
+              wrapper.style.backgroundColor = '#ffffff';
+              wrapper.style.width = '850px'; // Standard documentation width
+              wrapper.style.fontFamily = "'Inter', 'Segoe UI', Arial, sans-serif";
 
+              // No distracting headers/footers on every page, just clean documentation style
+              clonedEl.style.color = '#000000';
+              clonedEl.style.fontSize = '14px';
+              clonedEl.style.lineHeight = '1.7';
+              clonedEl.style.whiteSpace = 'normal';
+
+              clonedEl.parentNode.insertBefore(wrapper, clonedEl);
+              wrapper.appendChild(clonedEl);
+
+              // Refine all elements for Official Document look
               const allElements = clonedEl.querySelectorAll('*');
+
+              const emojiRegex = /[\u{1F300}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{1F191}-\u{1F251}\u{1F004}\u{1F0CF}\u{1F170}-\u{1F171}\u{1F17E}-\u{1F17F}\u{1F18E}\u{3030}\u{2B50}\u{2B55}\u{2934}-\u{2935}\u{2B05}-\u{2B07}\u{2B1B}-\u{2B1C}\u{3297}\u{3299}\u{303D}\u{00A9}\u{00AE}\u{2122}]/gu;
+
               allElements.forEach(el => {
-                el.style.color = '#000000';
+                el.style.color = '#111827';
                 el.style.margin = '0';
                 el.style.padding = '0';
-                el.style.lineHeight = '1.4'; // Slightly roomier for standard PDF look
+
+                // Remove emojis from text content
+                if (el.childNodes.length > 0) {
+                  el.childNodes.forEach(node => {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                      node.textContent = node.textContent.replace(emojiRegex, '');
+                    }
+                  });
+                }
 
                 if (el.tagName === 'P') {
-                  el.style.marginBottom = '6px'; // Standard paragraph gap for PDF
+                  el.style.marginBottom = '8px'; // Reduced gap
                 }
                 if (el.tagName === 'UL' || el.tagName === 'OL') {
-                  el.style.paddingLeft = '30px';
-                  el.style.marginBottom = '8px';
+                  el.style.paddingLeft = '25px';
+                  el.style.marginBottom = '12px'; // Reduced gap
                 }
                 if (el.tagName === 'LI') {
-                  el.style.marginBottom = '2px';
+                  el.style.marginBottom = '4px'; // Reduced gap
+                  el.style.display = 'list-item';
                 }
-                if (el.tagName.match(/^H[1-6]$/)) {
+
+                // Headers styling matching reference
+                if (el.tagName === 'H1') {
+                  el.style.fontSize = '24px'; // Slightly smaller h1
+                  el.style.fontWeight = '800';
+                  el.style.marginTop = '0';
+                  el.style.marginBottom = '16px';
+                  el.style.color = '#000000';
+                }
+                if (el.tagName === 'H2') {
+                  el.style.fontSize = '18px'; // Slightly smaller h2
+                  el.style.fontWeight = '700';
+                  el.style.marginTop = '20px'; // Reduced gap
+                  el.style.marginBottom = '10px';
+                  el.style.borderBottom = '1px solid #e5e7eb';
+                  el.style.paddingBottom = '4px';
+                }
+                if (el.tagName === 'H3') {
+                  el.style.fontSize = '15px';
+                  el.style.fontWeight = '700';
+                  el.style.marginTop = '15px'; // Reduced gap
+                  el.style.marginBottom = '8px';
+                }
+
+                // Table Styling matching reference
+                if (el.tagName === 'TABLE') {
+                  el.style.width = '100%';
+                  el.style.borderCollapse = 'collapse';
                   el.style.marginTop = '12px';
-                  el.style.marginBottom = '4px';
-                  el.style.fontWeight = 'bold';
+                  el.style.marginBottom = '12px';
+                }
+                if (el.tagName === 'TH') {
+                  el.style.backgroundColor = '#f9fafb';
+                  el.style.border = '1px solid #e5e7eb';
+                  el.style.padding = '8px';
+                  el.style.textAlign = 'left';
+                  el.style.fontWeight = '700';
+                  el.style.fontSize = '13px';
+                }
+                if (el.tagName === 'TD') {
+                  el.style.border = '1px solid #e5e7eb';
+                  el.style.padding = '6px 8px';
+                  el.style.fontSize = '12px';
+                }
+
+                if (el.tagName === 'STRONG' || el.tagName === 'B') {
+                  el.style.fontWeight = '700';
+                }
+
+                if (el.tagName === 'HR') {
+                  el.style.border = 'none';
+                  el.style.borderTop = '1px solid #e5e7eb';
+                  el.style.margin = '20px 0';
                 }
               });
             }
@@ -658,23 +764,33 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         });
       } catch (genError) {
         console.error("html2canvas error:", genError);
-        throw new Error("Failed to render PDF content: " + genError.message);
+        throw new Error("Failed to render PDF content.");
       }
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
+      const pdf = new jsPDF('p', 'mm', 'a4');
 
       const imgProps = pdf.getImageProperties(imgData);
-      const margin = 15; // Standard 15mm margin
+      const margin = 15; // 15mm margin
       const pdfWidth = pdf.internal.pageSize.getWidth() - (margin * 2);
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const contentHeightPerPage = pageHeight - (margin * 2);
 
-      // Add image to PDF with margins
-      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth, pdfHeight);
+      let heightLeft = pdfHeight;
+      let position = margin;
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', margin, position, pdfWidth, pdfHeight);
+      heightLeft -= contentHeightPerPage;
+
+      // Add subsequent pages if content overflows
+      while (heightLeft > 0) {
+        position = margin - (pdfHeight - heightLeft);
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, position, pdfWidth, pdfHeight);
+        heightLeft -= contentHeightPerPage;
+      }
 
       const filename = `aisa-response-${msg.id}.pdf`;
 
@@ -682,7 +798,8 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         pdf.save(filename);
         toast.success("PDF Downloaded");
       } else if (action === 'open') {
-        window.open(pdf.output('bloburl'), '_blank');
+        const blobUrl = pdf.output('bloburl');
+        window.open(blobUrl, '_blank');
       } else if (action === 'share') {
         const blob = pdf.output('blob');
         const file = new File([blob], filename, { type: 'application/pdf' });
@@ -696,8 +813,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
             });
           } catch (shareErr) {
             if (shareErr.name !== 'AbortError') {
-              console.error(shareErr);
-              pdf.save(filename); // Fallback
+              pdf.save(filename);
               toast("Sharing failed, downloaded instead");
             }
           }
@@ -1506,10 +1622,18 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                       {/* AI Feedback Actions */}
                       {msg.role !== 'user' && (
                         <div className="mt-1 pt-2 border-t border-transparent">
-                          <p className="text-sm text-maintext mb-2 flex items-center gap-1">
-                            {FEEDBACK_PROMPTS[(msg.id.toString().charCodeAt(msg.id.toString().length - 1) || 0) % FEEDBACK_PROMPTS.length]}
-                            <span className="text-base">😊</span>
-                          </p>
+                          {(() => {
+                            // Detect if the AI response contains Hindi (Devanagari script)
+                            const isHindiContent = /[\u0900-\u097F]/.test(msg.content);
+                            const prompts = isHindiContent ? FEEDBACK_PROMPTS.hi : FEEDBACK_PROMPTS.en;
+                            const promptIndex = (msg.id.toString().charCodeAt(msg.id.toString().length - 1) || 0) % prompts.length;
+                            return (
+                              <p className="text-sm text-maintext mb-2 flex items-center gap-1">
+                                {prompts[promptIndex]}
+                                <span className="text-base">😊</span>
+                              </p>
+                            );
+                          })()}
                           <div className="flex items-center gap-4">
                             <button
                               onClick={() => handleCopyMessage(msg.content)}
