@@ -161,7 +161,7 @@ const LiveAI = ({ onClose, language }) => {
             const response = await generateChatResponse(
                 history,
                 text,
-                `You are in a Video Call with the user. See what they see. Respond naturally in the user's language (${language}). Keep answers concise and conversational.`,
+                `You are AISA, powered by A-Series (an AI Agent Marketplace). You are in a video call. Respond naturally in the user's language (${language}). If asked, explain A-Series as a platform to discover and create AI agents.`,
                 attachment,
                 language
             );

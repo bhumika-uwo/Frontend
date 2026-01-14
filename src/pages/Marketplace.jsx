@@ -5,7 +5,7 @@ import { apis, AppRoute } from '../types';
 import { getUserData, toggleState } from '../userStore/userData';
 import SubscriptionForm from '../Components/SubscriptionForm/SubscriptionForm';
 import { useRecoilState } from 'recoil';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import NotificationBar from '../Components/NotificationBar/NotificationBar';
 
@@ -13,7 +13,9 @@ import NotificationBar from '../Components/NotificationBar/NotificationBar';
 
 const Marketplace = () => {
   const [agents, setAgents] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [searchParams] = useSearchParams();
+  const initialCategory = searchParams.get('category');
+  const [filter, setFilter] = useState(initialCategory || 'all');
   const [userAgent, setUserAgent] = useState([])
   const [loading, setLoading] = useState(false)
   const [subToggle, setSubToggle] = useRecoilState(toggleState)
@@ -23,6 +25,13 @@ const Marketplace = () => {
   const [showDemo, setShowDemo] = useState(false)
   const [demoUrl, setDemoUrl] = useState("")
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setFilter(categoryParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchData = async () => {

@@ -309,6 +309,21 @@ const Chat = () => {
         const SYSTEM_INSTRUCTION = `
 You are AISA, an advanced AI assistant powered by A-Series.
 
+### FIRST MESSAGE / GREETING INSTRUCTION:
+If this is the first message in the conversation (or if the user says hello/start):
+1.  **Start with**: "Hello... welcome to A Series" (Translate this phrase to the user's language).
+2.  **Explain**: Describe **A-Series** as a comprehensive **Marketplace for AI Agents**.
+3.  **Offer Categories**: You MUST present the available agent categories as a list of "Quick Links" to help them get started.
+    -   Use the following EXACT Markdown Link format so they are clickable:
+    -   *   [Business OS](/dashboard/marketplace?category=Business%20OS)
+    -   *   [Data & Intelligence](/dashboard/marketplace?category=Data%20%26%20Intelligence)
+    -   *   [Sales & Marketing](/dashboard/marketplace?category=Sales%20%26%20Marketing)
+    -   *   [HR & Finance](/dashboard/marketplace?category=HR%20%26%20Finance)
+    -   *   [Design & Creative](/dashboard/marketplace?category=Design%20%26%20Creative)
+    -   *   [Medical & Health AI](/dashboard/marketplace?category=Medical%20%26%20Health%20AI)
+    -   *   [View All Agents](/dashboard/marketplace)
+4.  **Language**: Ensure the introduction is in the SAME language as the user's greeting, but keep the Link Targets (URLs) exactly as above.
+
 ### CRITICAL LANGUAGE RULE:
 **ALWAYS respond in the SAME LANGUAGE as the user's message.**
 - If user writes in HINDI (Devanagari or Romanized), respond in HINDI.
@@ -1540,6 +1555,25 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               components={{
+                                a: ({ href, children }) => {
+                                  const isInternal = href && href.startsWith('/');
+                                  return (
+                                    <a
+                                      href={href}
+                                      onClick={(e) => {
+                                        if (isInternal) {
+                                          e.preventDefault();
+                                          navigate(href);
+                                        }
+                                      }}
+                                      className="text-primary hover:underline font-bold cursor-pointer"
+                                      target={isInternal ? "_self" : "_blank"}
+                                      rel={isInternal ? "" : "noopener noreferrer"}
+                                    >
+                                      {children}
+                                    </a>
+                                  );
+                                },
                                 p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
                                 ul: ({ children }) => <ul className="list-disc pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ul>,
                                 ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ol>,
