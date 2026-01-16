@@ -65,16 +65,16 @@ export const AppRoute = {
 };
 
 // Use environment variable for API URL (configured in .env file)
-export const API = "https://a-series-backend-561947379084.asia-south1.run.app/api";
-// export const API = "http://localhost:5000/api";
-// export const API = "http://192.168.29.45:5000/api";
+// export const API = "https://a-series-backend-561947379084.asia-south1.run.app/api";
+export const API = "http://localhost:8080/api";
+// export const API = "https://intermuscular-rosalee-drivingly.ngrok-free.dev/api";
 
 export const apis = {
   emailVerificationApi: `${API}/email_varification`,
   signUp: `${API}/auth/signup`,
   logIn: `${API}/auth/login/`,
   forgotPassword: `${API}/auth/forgot-password`,
-  resetPassword: `${API}/auth/reset-password/`,
+  resetPassword: `${API}/auth/reset-password`,
   user: `${API}/user`,
   getPayments: `${API}/user/payments`,
   notifications: `${API}/notifications`,
@@ -87,4 +87,5 @@ export const apis = {
   support: `${API}/support`,
   resetPasswordEmail: `${API}/auth/reset-password-email`,
   feedback: `${API}/feedback`,
+  synthesizeVoice: `${API}/voice/synthesize`,
 };

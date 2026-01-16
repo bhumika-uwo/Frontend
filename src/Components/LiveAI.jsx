@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { X, Mic, MicOff, Camera, Video, VideoOff, Volume2, VolumeX, RotateCcw } from 'lucide-react';
 import { generateChatResponse } from '../services/geminiService';
 import toast from 'react-hot-toast';
+import axios from 'axios';
+import { apis } from '../types';
 
 const LiveAI = ({ onClose, language }) => {
     const videoRef = useRef(null);
@@ -19,6 +21,7 @@ const LiveAI = ({ onClose, language }) => {
     const synthRef = useRef(window.speechSynthesis);
 
     const [facingMode, setFacingMode] = useState('user');
+    const [voiceGender, setVoiceGender] = useState('FEMALE'); // Default to Female
 
     // Initialize Camera
     useEffect(() => {
@@ -89,12 +92,10 @@ const LiveAI = ({ onClose, language }) => {
     }, []);
 
     // Text to Speech
-    const speakResponse = (text) => {
+    const speakResponse = async (text) => {
         if (synthRef.current.speaking) {
             synthRef.current.cancel();
         }
-
-        const utterance = new SpeechSynthesisUtterance(text);
 
         // Simple language mapper
         const langMap = {
@@ -105,40 +106,67 @@ const LiveAI = ({ onClose, language }) => {
             'German': 'de-DE',
             'Japanese': 'ja-JP'
         };
-        utterance.lang = langMap[language] || 'en-US';
+        const targetLang = langMap[language] || 'en-US';
 
-        // Try to select a "natural" voice if available
-        const voices = synthRef.current.getVoices();
-        if (voices.length > 0) {
-            const preferredVoice = voices.find(v => v.lang === utterance.lang && v.name.includes('Google')) ||
-                voices.find(v => v.lang === utterance.lang);
-            if (preferredVoice) utterance.voice = preferredVoice;
-        }
+        try {
+            setIsSpeaking(true);
+            const response = await axios.post(apis.synthesizeVoice, {
+                text,
+                languageCode: targetLang,
+                gender: voiceGender
+            }, {
+                responseType: 'arraybuffer'
+            });
 
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => {
-            setIsSpeaking(false);
-            // Auto-restart listening for continuous conversation (Gemini Style)
-            // We verify we are still mounted and in a "call" (isVideoActive or generally open)
-            // Note: checks if user manually closed/muted via a ref or state could be complex in closures, 
-            // but for "Live" mode, defaulting to Resume is the expected behavior.
+            const blob = new Blob([response.data], { type: 'audio/mpeg' });
+            const url = window.URL.createObjectURL(blob);
+            const audio = new Audio(url);
 
-            if (recognitionRef.current) {
-                try {
-                    // Small delay to avoid picking up the very end of the AI's own voice
+            audio.onended = () => {
+                setIsSpeaking(false);
+                window.URL.revokeObjectURL(url);
+                // Resume mic logic
+                if (recognitionRef.current) {
                     setTimeout(() => {
                         if (recognitionRef.current) {
                             recognitionRef.current.start();
                             setIsListening(true);
                         }
                     }, 100);
-                } catch (e) {
-                    // Ignore if already started
-                    console.log("Auto-resume mic info:", e);
                 }
+            };
+
+            // Handle audio loading errors
+            audio.onerror = (e) => {
+                console.error("Audio playback error:", e);
+                setIsSpeaking(false);
+                // Try fallback
+                fallbackSpeak(text, targetLang);
+            };
+
+            await audio.play();
+
+        } catch (err) {
+            console.error("Google TTS failed, using fallback:", err);
+            fallbackSpeak(text, targetLang);
+        }
+    };
+
+    const fallbackSpeak = (text, lang) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => {
+            setIsSpeaking(false);
+            if (recognitionRef.current) {
+                setTimeout(() => {
+                    if (recognitionRef.current) {
+                        recognitionRef.current.start();
+                        setIsListening(true);
+                    }
+                }, 100);
             }
         };
-
         synthRef.current.speak(utterance);
     };
 
@@ -161,7 +189,15 @@ const LiveAI = ({ onClose, language }) => {
             const response = await generateChatResponse(
                 history,
                 text,
-                `You are AISA, powered by A-Series (an AI Agent Marketplace). You are in a video call. Respond naturally in the user's language (${language}). If asked, explain A-Series as a platform to discover and create AI agents.`,
+                `You are AISA, powered by A-Series. You are in a video call. 
+                 CRITICAL LANGUAGE INSTRUCTION:
+                 - If the user speaks Hindi, respond in pure, natural, and polite Hindi (Devanagari script). 
+                 - Avoid heavy English words unless unavoidable (like "AI" or "Agent").
+                 - Maintain a warm, professional, and helpful tone.
+                 - Your text will be converted to speech, so write in a way that sounds natural when spoken.
+                 Current Language Setting: ${language}.
+                 
+                 If asked, explain A-Series as a platform to discover and create AI agents.`,
                 attachment,
                 language
             );
@@ -291,6 +327,19 @@ const LiveAI = ({ onClose, language }) => {
                         title="Switch Camera"
                     >
                         <RotateCcw className="w-6 h-6" />
+                    </button>
+
+                    {/* Voice Gender Toggle */}
+                    <button
+                        onClick={() => {
+                            const newGender = voiceGender === 'FEMALE' ? 'MALE' : 'FEMALE';
+                            setVoiceGender(newGender);
+                            toast.success(`Voice set to ${newGender}`);
+                        }}
+                        className="p-3 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all font-bold text-xl"
+                        title="Toggle Voice Gender"
+                    >
+                        {voiceGender === 'FEMALE' ? '👩' : '👨'}
                     </button>
 
                     {/* Video Toggle */}
