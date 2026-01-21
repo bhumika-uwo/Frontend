@@ -1675,9 +1675,9 @@ For "Remix" requests with an attachment, analyze the attached image, then create
             </button>
 
             <div className="flex items-center gap-2 text-subtext min-w-0">
-              <span className="text-sm hidden sm:inline shrink-0">Chatting with:</span>
-              <Menu as="div" className="relative inline-block text-left min-w-0">
-                <Menu.Button className="flex items-center gap-2 text-maintext bg-surface px-3 py-1.5 rounded-lg border border-border cursor-pointer hover:bg-secondary transition-colors min-w-0 w-full">
+              <span className="text-sm hidden md:inline shrink-0">Chatting with:</span>
+              <Menu as="div" className="relative inline-block text-left min-w-0 shrink">
+                <Menu.Button className="flex items-center gap-2 text-maintext bg-surface px-3 py-1.5 rounded-lg border border-border cursor-pointer hover:bg-secondary transition-colors truncate max-w-[140px] sm:max-w-xs">
                   <div className="w-5 h-5 rounded bg-primary/20 flex items-center justify-center shrink-0">
                     <img
                       src={activeAgent.avatar || (activeAgent.agentName === 'AISA' ? '/AGENTS_IMG/AISA.png' : '/AGENTS_IMG/AIBOT.png')}
@@ -1747,21 +1747,14 @@ For "Remix" requests with an attachment, analyze the attached image, then create
               className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-surface text-maintext hover:bg-secondary transition-colors text-xs font-medium"
             >
               <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span>{isCompareMode ? 'Compare Mode (All)' : (TOOL_PRICING.chat.models.find(m => m.id === toolModels.chat)?.name || 'Model')}</span>
+              <span>
+                {isCompareMode ? 'Compare Mode (All)' : (TOOL_PRICING.chat.models.find(m => m.id === toolModels?.chat)?.name || 'Model')}
+              </span>
               <ChevronDown className="w-3 h-3 text-subtext" />
             </button>
 
             {/* Compare Mode Toggle */}
-            <button
-              onClick={() => {
-                setIsCompareMode(!isCompareMode);
-                toast.success(!isCompareMode ? "Compare Mode Enabled: All models will reply!" : "Compare Mode Disabled");
-              }}
-              className={`p-2 rounded-lg transition-colors ${isCompareMode ? 'bg-primary text-white' : 'text-subtext hover:bg-surface'}`}
-              title="Toggle Compare Mode (All Models)"
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-            </button>
+
           </div>
         </div>
 
@@ -2369,6 +2362,35 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                 <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
 
+              {/* Mobile Model Selector (Input Bar) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedToolType('chat');
+                  setIsModelSelectorOpen(true);
+                }}
+                className="sm:hidden mx-1.5 p-3 rounded-full border border-border bg-surface text-maintext hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
+                title="Select Model"
+              >
+                <Sparkles className="w-5 h-5 text-primary" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCompareMode(!isCompareMode);
+                  toast.success(!isCompareMode ? "Compare Mode Enabled: All models will reply!" : "Compare Mode Disabled");
+                }}
+                className={`mx-1.5 p-3 sm:p-3.5 rounded-full border transition-all duration-300 flex items-center justify-center shrink-0
+                  ${isCompareMode
+                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                    : 'bg-surface text-subtext border-border hover:text-primary hover:border-primary/50'
+                  }`}
+                title="Compare Mode (Select Multiple Agents)"
+              >
+                <ArrowLeftRight className="w-5 h-5" />
+              </button>
+
               <div className="relative flex-1">
                 <textarea
                   ref={inputRef}
@@ -2382,10 +2404,10 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                   onPaste={handlePaste}
                   placeholder="Ask AISA..."
                   rows={1}
-                  className={`w-full bg-surface border border-border rounded-[28px] py-3.5 md:py-4 pl-5 sm:pl-6 text-base md:text-lg text-maintext placeholder-subtext focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm transition-all resize-none overflow-y-auto custom-scrollbar ${inputValue.trim() ? 'pr-20 md:pr-24' : 'pr-32 md:pr-40'}`}
+                  className={`w-full bg-surface border border-border rounded-[28px] py-3.5 md:py-4 pl-5 sm:pl-6 text-base md:text-lg text-maintext placeholder-subtext focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm transition-all resize-none overflow-y-auto custom-scrollbar ${inputValue.trim() ? 'pr-14 md:pr-24' : 'pr-28 md:pr-40'}`}
                   style={{ minHeight: '54px', maxHeight: '200px', lineHeight: '1.5' }}
                 />
-                <div className="absolute right-2 bottom-1.5 flex items-center gap-0 sm:gap-1 z-10">
+                <div className="absolute right-2 bottom-2 flex items-center gap-0 sm:gap-1 z-10">
                   {isListening && (
                     <motion.div
                       initial={{ opacity: 0, x: 10 }}
@@ -2429,7 +2451,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                       onClick={handleStop}
                       className="p-2 sm:p-2.5 rounded-full bg-red-500 text-white hover:opacity-90 transition-colors shadow-md flex items-center justify-center animate-pulse"
                     >
-                      <Square className="w-4 h-4 fill-current" />
+                      <Square className="w-5 h-5 fill-current" />
                     </button>
                   ) : (
                     <button
@@ -2437,7 +2459,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                       disabled={(!inputValue.trim() && filePreviews.length === 0)}
                       className="p-2 sm:p-2.5 rounded-full bg-primary text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-5 h-5" />
                     </button>
                   )}
                 </div>
