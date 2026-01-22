@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Send, Bot, User, Sparkles, Plus, Monitor, ChevronDown, History, Paperclip, X, FileText, Image as ImageIcon, Cloud, HardDrive, Edit2, Download, Mic, Wand2, Eye, FileSpreadsheet, Presentation, File, MoreVertical, Trash2, Check, Camera, Video, Copy, ThumbsUp, ThumbsDown, Share } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Plus, Monitor, ChevronDown, History, Paperclip, X, FileText, Image as ImageIcon, Cloud, HardDrive, Edit2, Download, Mic, Wand2, Eye, FileSpreadsheet, Presentation, File, MoreVertical, Trash2, Check, Camera, Video, Copy, ThumbsUp, ThumbsDown, Share, Square, ArrowLeftRight } from 'lucide-react';
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
 import { Menu, Transition, Dialog } from '@headlessui/react';
@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import LiveAI from '../Components/LiveAI';
 
 import ImageEditor from '../Components/ImageEditor';
+import ModelSelector from '../Components/ModelSelector';
 import axios from 'axios';
 import { apis } from '../types';
 import { jsPDF } from 'jspdf';
@@ -48,6 +49,39 @@ const FEEDBACK_PROMPTS = {
   ]
 };
 
+const TOOL_PRICING = {
+  chat: {
+    models: [
+      { id: 'gemini-flash', name: 'Gemini Flash', price: 0, speed: 'Fast', description: 'Google`s fastest model' },
+      { id: 'gemini-pro', name: 'Gemini Pro', price: 0.05, speed: 'Balanced', description: 'Advanced reasoning' },
+      { id: 'groq-llama3', name: 'Groq Llama 3.3', price: 0.02, speed: 'Super Fast', description: 'Llama 3.3 70B via Groq' },
+      { id: 'openai-gpt4o', name: 'GPT-4o', price: 0.10, speed: 'Fast', description: 'OpenAI`s flagship model' },
+      { id: 'claude-3-opus', name: 'Claude 3 Opus', price: 0.15, speed: 'Slow', description: 'Anthropic`s most powerful model' },
+      { id: 'kimi', name: 'Kimi (Moonshot)', price: 0.05, speed: 'Balanced', description: 'Long context specialist' },
+      { id: 'kimi-k1.5', name: 'Kimi k1.5', price: 0.07, speed: 'Fast', description: 'Next-gen Kimi model' }
+    ]
+  },
+  image: {
+    models: [
+      { id: 'gemini-flash', name: 'Gemini Flash', price: 0, speed: 'Fast', description: 'Basic image analysis' },
+      { id: 'gemini-pro', name: 'Gemini Pro Vision', price: 0.02, speed: 'Medium', description: 'Advanced image understanding' },
+      { id: 'gpt4-vision', name: 'GPT-4 Vision', price: 0.05, speed: 'Slow', description: 'Premium image analysis' }
+    ]
+  },
+  document: {
+    models: [
+      { id: 'gemini-flash', name: 'Gemini Flash', price: 0, speed: 'Fast', description: 'Basic document analysis' },
+      { id: 'gemini-pro', name: 'Gemini Pro', price: 0.02, speed: 'Medium', description: 'Advanced document processing' },
+      { id: 'gpt4', name: 'GPT-4', price: 0.03, speed: 'Medium', description: 'Premium document analysis' }
+    ]
+  },
+  voice: {
+    models: [
+      { id: 'gemini-flash', name: 'Gemini Flash', price: 0, speed: 'Fast', description: 'Standard voice recognition' }
+    ]
+  }
+};
+
 const Chat = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -61,12 +95,21 @@ const Chat = () => {
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef(null);
   const [currentSessionId, setCurrentSessionId] = useState(sessionId || 'new');
+  const [typingMessageId, setTypingMessageId] = useState(null);
 
   // File Upload State
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [isLiveMode, setIsLiveMode] = useState(false);
-  const [filePreview, setFilePreview] = useState(null);
+  const [filePreviews, setFilePreviews] = useState([]);
+  const [activeAgent, setActiveAgent] = useState({ name: 'AISA', category: 'General' });
+  const [userAgents, setUserAgents] = useState([]);
+  const [toolModels, setToolModels] = useState({
+    chat: 'gemini-flash',
+    image: 'gemini-flash',
+    document: 'gemini-flash',
+    voice: 'gemini-flash'
+  });
   const uploadInputRef = useRef(null);
   const driveInputRef = useRef(null);
   const photosInputRef = useRef(null);
@@ -80,6 +123,14 @@ const Chat = () => {
   const attachBtnRef = useRef(null);
   const menuRef = useRef(null);
   const recognitionRef = useRef(null);
+  const stopTypingRef = useRef(false);
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
+  const [selectedToolType, setSelectedToolType] = useState(null);
+  const [isCompareMode, setIsCompareMode] = useState(false);
+
+  // Message feedback state
+  const [likedMessages, setLikedMessages] = useState(new Set());
+  const [dislikedMessages, setDislikedMessages] = useState(new Set());
 
   // Close menu on click outside
   useEffect(() => {
@@ -118,29 +169,33 @@ const Chat = () => {
       'application/vnd.openxmlformats-officedocument.presentationml.presentation'
     ];
 
-    // All file types updated to be accepted
-
-    // Unlimited file size allowed
-
-    setSelectedFile(file);
+    setSelectedFiles(prev => [...prev, file]);
 
     // Generate Preview
     const reader = new FileReader();
     reader.onloadend = () => {
-      setFilePreview(reader.result);
+      setFilePreviews(prev => [...prev, {
+        url: reader.result,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        id: Math.random().toString(36).substr(2, 9)
+      }]);
     };
     reader.readAsDataURL(file);
   };
 
   const handleFileSelect = (e) => {
-    processFile(e.target.files[0]);
+    const files = Array.from(e.target.files);
+    files.forEach(file => processFile(file));
   };
 
   const handlePaste = (e) => {
     // Handle files pasted from file system
     if (e.clipboardData.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
-      processFile(e.clipboardData.files[0]);
+      const files = Array.from(e.clipboardData.files);
+      files.forEach(file => processFile(file));
       return;
     }
 
@@ -153,16 +208,25 @@ const Chat = () => {
           if (file) {
             e.preventDefault();
             processFile(file);
-            return;
           }
         }
       }
     }
   };
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    setFilePreview(null);
+  const handleRemoveFile = (id) => {
+    if (id) {
+      // Find the file name to remove from selectedFiles
+      const previewToRemove = filePreviews.find(p => p.id === id);
+      if (previewToRemove) {
+        setSelectedFiles(prev => prev.filter(f => f.name !== previewToRemove.name));
+        setFilePreviews(prev => prev.filter(p => p.id !== id));
+      }
+    } else {
+      // Clear all
+      setSelectedFiles([]);
+      setFilePreviews([]);
+    }
     if (uploadInputRef.current) uploadInputRef.current.value = '';
     if (driveInputRef.current) driveInputRef.current.value = '';
     if (photosInputRef.current) photosInputRef.current.value = '';
@@ -179,13 +243,42 @@ const Chat = () => {
     }
   };
 
+  const handleModelSelect = (modelId) => {
+    if (selectedToolType) {
+      setToolModels(prev => ({
+        ...prev,
+        [selectedToolType]: modelId
+      }));
+      const selectedModel = TOOL_PRICING[selectedToolType].models.find(m => m.id === modelId);
+      toast.success(`Switched to ${selectedModel?.name}`);
+      setIsModelSelectorOpen(false);
+    }
+  };
+
 
   useEffect(() => {
     const loadSessions = async () => {
       const data = await chatStorageService.getSessions();
       setSessions(data);
-      console.log(data);
 
+      // Fetch User Subscribed Agents
+      try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const userId = user?.id || user?._id;
+        if (userId) {
+          const res = await axios.post(apis.getUserAgents, { userId });
+          const agents = res.data?.agents || [];
+          // Add default AISA agent if not present
+          const processedAgents = [{ agentName: 'AISA', category: 'General', avatar: '/AGENTS_IMG/AISA.png' }, ...agents];
+          setUserAgents(processedAgents);
+
+          // Find agent if already chatting with one (placeholder for now)
+          // For now, default to AISA
+        }
+      } catch (err) {
+        console.error("Error fetching user agents:", err);
+        setUserAgents([{ agentName: 'AISA', category: 'General', avatar: '/AGENTS_IMG/AISA.png' }]);
+      }
     };
     loadSessions();
   }, [messages]);
@@ -236,15 +329,22 @@ const Chat = () => {
     // Simulating Drive Integration via Link
     const link = prompt("Paste your Google Drive File Link:");
     if (link) {
-      const driveFile = {
+      setFilePreviews(prev => [...prev, {
+        url: link,
         name: "Google Drive File",
         type: "application/vnd.google-apps.file",
         size: 0,
-        isLink: true
-      };
-      setSelectedFile(driveFile);
-      setFilePreview(link);
+        isLink: true,
+        id: Math.random().toString(36).substr(2, 9)
+      }]);
+      setSelectedFiles(prev => [...prev, { name: "Google Drive File", type: "link" }]);
     }
+  };
+
+  const handleStop = () => {
+    stopTypingRef.current = true;
+    setIsLoading(false);
+    setTypingMessageId(null);
   };
 
   const isSendingRef = useRef(false);
@@ -258,9 +358,10 @@ const Chat = () => {
     // Use overrideContent if provided (for instant voice sending), otherwise fallback to state
     const contentToSend = typeof overrideContent === 'string' ? overrideContent : inputValue.trim();
 
-    if ((!contentToSend && !selectedFile) || isLoading) return;
+    if ((!contentToSend && filePreviews.length === 0) || isLoading) return;
 
     isSendingRef.current = true;
+    stopTypingRef.current = false;
 
     let activeSessionId = currentSessionId;
     let isFirstMessage = false;
@@ -280,13 +381,19 @@ const Chat = () => {
       const userMsg = {
         id: Date.now().toString(),
         role: 'user',
-        content: contentToSend || (selectedFile ? "Describe this image" : ""),
+        content: contentToSend || (filePreviews.length > 0 ? "Analyze these files" : ""),
         timestamp: Date.now(),
-        attachment: selectedFile ? {
-          type: selectedFile.type.startsWith('image/') ? 'image' : 'file',
-          url: filePreview,
-          name: selectedFile.name
-        } : null
+        attachments: filePreviews.map(p => ({
+          url: p.url,
+          name: p.name,
+          type: p.type.startsWith('image/') ? 'image' :
+            p.type.includes('pdf') ? 'pdf' :
+              p.type.includes('word') || p.type.includes('document') ? 'docx' :
+                p.type.includes('excel') || p.type.includes('spreadsheet') ? 'xlsx' :
+                  p.type.includes('powerpoint') || p.type.includes('presentation') ? 'pptx' : 'file'
+        })),
+        agentName: activeAgent.agentName || activeAgent.name,
+        agentCategory: activeAgent.category
       };
 
       const updatedMessages = [...messages, userMsg];
@@ -295,72 +402,213 @@ const Chat = () => {
       handleRemoveFile(); // Clear file after sending
       setIsLoading(true);
 
-      try {
-        const title = isFirstMessage ? (userMsg.content ? userMsg.content.slice(0, 30) : 'File Attachment') + '...' : undefined;
-        await chatStorageService.saveMessage(activeSessionId, userMsg, title);
 
-        if (isFirstMessage) {
-          isNavigatingRef.current = true;
-          setCurrentSessionId(activeSessionId);
-          navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
-        }
+      const title = isFirstMessage ? (userMsg.content ? userMsg.content.slice(0, 30) : 'File Attachment') + '...' : undefined;
+      await chatStorageService.saveMessage(activeSessionId, userMsg, title);
 
-        // Send to AI for response
-        const SYSTEM_INSTRUCTION = `
-You are AISA, an advanced AI assistant powered by A-Series.
+      if (isFirstMessage) {
+        isNavigatingRef.current = true;
+        setCurrentSessionId(activeSessionId);
+        navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
+      }
 
-### FIRST MESSAGE / GREETING INSTRUCTION:
-If this is the first message in the conversation (or if the user says hello/start):
-1.  **Start with**: "Hello... welcome to A Series" (Translate this phrase to the user's language).
-2.  **Explain**: Describe **A-Series** as a comprehensive **Marketplace for AI Agents**.
-3.  **Offer Categories**: You MUST present the available agent categories as a list of "Quick Links" to help them get started.
-    -   Use the following EXACT Markdown Link format so they are clickable:
-    -   *   [Business OS](/dashboard/marketplace?category=Business%20OS)
-    -   *   [Data & Intelligence](/dashboard/marketplace?category=Data%20%26%20Intelligence)
-    -   *   [Sales & Marketing](/dashboard/marketplace?category=Sales%20%26%20Marketing)
-    -   *   [HR & Finance](/dashboard/marketplace?category=HR%20%26%20Finance)
-    -   *   [Design & Creative](/dashboard/marketplace?category=Design%20%26%20Creative)
-    -   *   [Medical & Health AI](/dashboard/marketplace?category=Medical%20%26%20Health%20AI)
-    -   *   [View All Agents](/dashboard/marketplace)
-4.  **Language**: Ensure the introduction is in the SAME language as the user's greeting, but keep the Link Targets (URLs) exactly as above.
+      // Send to AI for response
+      const caps = getAgentCapabilities(activeAgent.agentName, activeAgent.category);
+      const hasAttachments = filePreviews.length > 0;
+      let SYSTEM_INSTRUCTION = '';
+
+      if (hasAttachments) {
+        SYSTEM_INSTRUCTION = `
+You are ${activeAgent.agentName || 'AISA'}, an advanced AI assistant powered by A-Series.
+CRITICAL MODE: DOCUMENT/IMAGE ANALYSIS.
+You have received ${filePreviews.length} file(s) from the user.
+
+YOUR TASK:
+1. Analyze the attached file(s) deeply and professionally.
+2. Answer the user's specific question: "${userMsg.content || 'Analyze this file'}" regarding the file.
+3. If the user asks "What is this?", summarize the document/image.
+
+STRICT RULES:
+- DO NOT output any "Quick Links", "Categories", or "Menu" lists.
+- DO NOT say "Welcome to AISA".
+- DO NOT use generic greetings.
+- GO STRAIGHT TO THE ANALYSIS.
+- Respond in the SAME key language as the user (English or Hindi).
+
+### MULTI-FILE ANALYSIS MANDATE (STRICT 1:1 RULE):
+You have received exactly ${filePreviews.length} file(s).
+You MUST provide exactly ${filePreviews.length} distinct analysis blocks.
+
+CRITICAL RULES:
+1.  **NO MERGING**: Do NOT combine files into a single "Chapter" or "Section".
+2.  **NO SKIPPING**: If 2 files are uploaded, you MUST output 2 analysis blocks.
+3.  **SEPARATE ENTITIES**: Treat each file as a completely independent document requiring its own full answer.
+4.  **DELIMITER MANDATORY**: Use the delimiter below to separate EACH file's answer.
+
+REQUIRED OUTPUT FORMAT:
+[Brief or no greeting]
+
+---SPLIT_RESPONSE---
+**Analysis of: {Filename 1}**
+[Full detailed answer/analysis for File 1]
+
+---SPLIT_RESPONSE---
+**Analysis of: {Filename 2}**
+[Full detailed answer/analysis for File 2]
+
+(Repeat strictly for ALL ${filePreviews.length} files)
+
+### RESPONSE FORMATTING RULES (STRICT):
+1.  **Structure**: ALWAYS use **Bold Headings** and **Bullet Points**. Avoid long paragraphs.
+2.  **Point-wise Answers**: Break down complex topics into simple points.
+3.  **Highlights**: Bold key terms and important concepts.
+4.  **Summary**: Include a "One-line summary" or "Simple definition" at the start or end where appropriate.
+5.  **Emojis**: Use relevant emojis.
+
+${caps.canUploadDocs ? `DOCUMENT ANALYSIS CAPABILITIES:
+- You can process and extract text from PDF, Word (Docx), and Excel files provided as attachments.` : ''}
+
+${activeAgent.instructions ? `SPECIFIC AGENT INSTRUCTIONS:
+${activeAgent.instructions}` : ''}
+`;
+      } else {
+        SYSTEM_INSTRUCTION = `
+You are ${activeAgent.agentName || 'AISA'}, an advanced AI assistant powered by A-Series.
+${activeAgent.category ? `Your specialization is in ${activeAgent.category}.` : ''}
+
+### FIRST MESSAGE / GREETING LOGIC (CRITICAL):
+Determine if the user's first message is a simple greeting or a specific question.
+
+**Scenario 1: Simple Greeting / Unclear Intent**
+(e.g., "Hello", "Hi", "Aisa", "Start", ".")
+1. **Welcome**: "Hello... welcome to ${activeAgent.agentName || 'AISA'}" (Translate to user's language).
+2. **Intro**: Briefly describe yourself as a specialized AI agent in the ${activeAgent.category || 'General'} category on A-Series.
+3. **Guide**: You MUST present the "Quick Links" below to help them explore categories:
+   - * [Business OS](/dashboard/marketplace?category=Business%20OS)
+   - * [Data & Intelligence](/dashboard/marketplace?category=Data%20%26%20Intelligence)
+   - * [Sales & Marketing](/dashboard/marketplace?category=Sales%20%26%20Marketing)
+   - * [HR & Finance](/dashboard/marketplace?category=HR%20%26%20Finance)
+   - * [Design & Creative](/dashboard/marketplace?category=Design%20%26%20Creative)
+   - * [Medical & Health AI](/dashboard/marketplace?category=Medical%20%26%20Health%20AI)
+   - * [View All Agents](/dashboard/marketplace)
+
+**Scenario 2: Specific Question / Clear Intent**
+(e.g., "Hello, what is a computer?", "Analyze my file", "How to grow business?")
+1. **Acknowledge**: Start with a brief "Hello... welcome to ${activeAgent.agentName || 'AISA'}. I'd be happy to help with that."
+2. **Direct Answer**: Answer the user's question directly.
+3. **STRICT RULE**: DO NOT show the "Quick Links" list or describe categories. Focus ONLY on the answer.
 
 ### CRITICAL LANGUAGE RULE:
 **ALWAYS respond in the SAME LANGUAGE as the user's message.**
 - If user writes in HINDI (Devanagari or Romanized), respond in HINDI.
 - If user writes in ENGLISH, respond in ENGLISH.
 - If user mixes languages, prioritize the dominant language.
-- NEVER say "I cannot understand Hindi" or ask the user to switch languages.
 
 ### RESPONSE FORMATTING RULES (STRICT):
 1.  **Structure**: ALWAYS use **Bold Headings** and **Bullet Points**. Avoid long paragraphs.
 2.  **Point-wise Answers**: Break down complex topics into simple points.
-3.  **Highlights**: Bold key terms and important concepts (e.g., **RAM**, **CPU**).
+3.  **Highlights**: Bold key terms and important concepts.
 4.  **Summary**: Include a "One-line summary" or "Simple definition" at the start or end where appropriate.
-5.  **Emojis**: Use relevant emojis to make the content engaging (e.g., 💡, 🚀, 👉).
-6.  **Clarity**: Keep sentences short and clear.
+5.  **Emojis**: Use relevant emojis.
 
-IMAGE GENERATION CAPABILITIES:
-If the user asks for an image (e.g., "generate", "create", "draw", "show me a pic", "image dikhao", "photo bhejo", "pic do"), you MUST generate it using the Pollinations API.
-Format: ![Image](https://image.pollinations.ai/prompt/{URL_ENCODED_DESCRIPTION}?nologo=true)
-Example: ![Cyberpunk City](https://image.pollinations.ai/prompt/cyberpunk%20city%20neon%20lights?nologo=true)
-Do NOT say "I cannot create images". You CAN by using this link format. 
-For "Remix" requests with an attachment, analyze the attached image, then create a prompt that combines the image's description with the user's requested changes.
+${caps.canUploadImages ? `IMAGE ANALYSIS CAPABILITIES:
+- You have the ability to see and analyze images provided by the user.
+- If the user asks for an image, use Pollinations API: ![Image](https://image.pollinations.ai/prompt/{URL_ENCODED_DESCRIPTION}?nologo=true)` : ''}
+
+${caps.canUploadDocs ? `DOCUMENT ANALYSIS CAPABILITIES:
+- You can process and extract text from PDF, Word (Docx), and Excel files provided as attachments.` : ''}
+
+${activeAgent.instructions ? `SPECIFIC AGENT INSTRUCTIONS:
+${activeAgent.instructions}` : ''}
 `;
-        const aiResponseText = await generateChatResponse(messages, userMsg.content, SYSTEM_INSTRUCTION, userMsg.attachment, currentLang);
-
-        const modelMsg = {
-          id: (Date.now() + 1).toString(),
-          role: 'model',
-          content: aiResponseText,
-          timestamp: Date.now(),
-        };
-
-        setMessages((prev) => [...prev, modelMsg]);
-        await chatStorageService.saveMessage(activeSessionId, modelMsg);
-      } catch (innerError) {
-        console.error("Storage/API Error:", innerError);
-        // Even if saving failed, we still have the local state
       }
+
+      let responsesToProcess = [];
+
+      if (isCompareMode) {
+        // Parallel Fetch from ALL models
+        const models = TOOL_PRICING.chat.models;
+        const promises = models.map(m =>
+          generateChatResponse(messages, userMsg.content, SYSTEM_INSTRUCTION, userMsg.attachments, currentLang, m.id)
+            .then(reply => ({ modelName: m.name, reply, success: true }))
+            .catch(err => ({ modelName: m.name, reply: `Failed: ${err.message}`, success: false }))
+        );
+
+        const results = await Promise.all(promises);
+
+        // Format them to be processed by the display logic
+        responsesToProcess = results.map(r => `### 🤖 ${r.modelName}\n${r.reply}`);
+      } else {
+        // Single Model Fetch
+        const aiResponseText = await generateChatResponse(messages, userMsg.content, SYSTEM_INSTRUCTION, userMsg.attachments, currentLang, toolModels.chat);
+        responsesToProcess = [aiResponseText];
+      }
+
+      if (stopTypingRef.current) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(false); // Stop main loader
+
+      // Process all responses (Compare Mode produces multiple)
+      for (const rawResponse of responsesToProcess) {
+
+        // Check for multiple file analysis headers to split into separate cards (Logic reused)
+        const delimiter = '---SPLIT_RESPONSE---';
+        let responseParts = [];
+
+        if (rawResponse && rawResponse.includes(delimiter)) {
+          const rawParts = rawResponse.split(delimiter).filter(p => p && p.trim().length > 0);
+          responseParts = rawParts.length > 0 ? rawParts.map(part => part.trim()) : [rawResponse];
+        } else {
+          responseParts = [rawResponse || "No response generated."];
+        }
+
+        for (let i = 0; i < responseParts.length; i++) {
+          const partContent = responseParts[i];
+          if (!partContent) continue;
+          if (stopTypingRef.current) break;
+
+          const msgId = (Date.now() + Math.random()).toString();
+          const modelMsg = {
+            id: msgId,
+            role: 'model',
+            content: '', // Start empty for typewriter effect
+            timestamp: Date.now(),
+          };
+
+          // Add the empty message structure to UI
+          setMessages((prev) => [...prev, modelMsg]);
+          setTypingMessageId(msgId); // Mark this message as typing
+
+          // Typewriter effect simulation
+          const words = partContent.split(' ');
+          let displayedContent = '';
+
+          // Faster typing in compare mode
+          const delay = isCompareMode ? 5 : (words.length > 200 ? 10 : (words.length > 50 ? 20 : 35));
+
+          for (let j = 0; j < words.length; j++) {
+            displayedContent += (j === 0 ? '' : ' ') + words[j];
+
+            if (stopTypingRef.current) {
+              setTypingMessageId(null);
+              await chatStorageService.saveMessage(activeSessionId, { ...modelMsg, content: displayedContent });
+              break;
+            }
+
+            setMessages((prev) =>
+              prev.map(m => m.id === msgId ? { ...m, content: displayedContent } : m)
+            );
+
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+          setTypingMessageId(null);
+          await chatStorageService.saveMessage(activeSessionId, { ...modelMsg, content: displayedContent });
+        }
+      }
+
     } catch (error) {
       console.error("Chat Error:", error);
       toast.error(`Error: ${error.message || "Failed to send message"}`);
@@ -389,6 +637,51 @@ For "Remix" requests with an attachment, analyze the attached image, then create
     }
   };
 
+  const getAgentCapabilities = (agentName, category) => {
+    const name = (agentName || '').toLowerCase();
+    const cat = (category || '').toLowerCase();
+
+    // Default: Everything enabled for AISA
+    if (name === 'aisa' || !name) {
+      return {
+        canUploadImages: true,
+        canUploadDocs: true,
+        canVoice: true,
+        canVideo: true,
+        canCamera: true
+      };
+    }
+
+    const caps = {
+      canUploadImages: true,
+      canUploadDocs: true,
+      canVoice: true,
+      canVideo: true,
+      canCamera: true
+    };
+
+    // Specific logic per category/name
+    if (cat.includes('hr') || cat.includes('finance') || name.includes('doc') || name.includes('legal')) {
+      caps.canVideo = false;
+      caps.canCamera = false;
+      caps.canUploadImages = false;
+    } else if (cat.includes('design') || cat.includes('creative') || name.includes('photo')) {
+      caps.canVoice = false;
+      caps.canVideo = false;
+      caps.canUploadDocs = false;
+    } else if (name.includes('voice') || name.includes('call') || name.includes('bot')) {
+      caps.canUploadImages = false;
+      caps.canUploadDocs = false;
+      caps.canCamera = false;
+      caps.canVideo = false;
+    } else if (cat.includes('medical') || cat.includes('health')) {
+      caps.canVideo = false;
+      caps.canUploadImages = true;
+    }
+
+    return caps;
+  };
+
   const handleDownload = async (url, filename) => {
     try {
       const response = await fetch(url);
@@ -413,7 +706,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
   };
 
   const handleImageAction = (action) => {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
 
     let command = '';
     switch (action) {
@@ -853,28 +1146,43 @@ For "Remix" requests with an attachment, analyze the attached image, then create
     }
   }, [inputValue]);
 
-  const handleThumbsDown = (msgId) => {
-    setFeedbackMsgId(msgId);
-    setFeedbackOpen(true);
-    setFeedbackCategory([]);
-    setFeedbackDetails("");
+  const handleThumbsUp = (msgId) => {
+    setLikedMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(msgId)) {
+        newSet.delete(msgId); // Toggle off
+      } else {
+        newSet.add(msgId);
+        setDislikedMessages(d => {
+          const dNew = new Set(d);
+          dNew.delete(msgId); // Remove dislike if liking
+          return dNew;
+        });
+        toast.success("Thanks for the feedback!");
+      }
+      return newSet;
+    });
   };
 
-  const handleThumbsUp = async (msgId) => {
-    try {
-      await axios.post(apis.feedback, {
-        sessionId: sessionId || 'unknown',
-        messageId: msgId,
-        type: 'thumbs_up'
-      });
-      toast.success("Thanks for the positive feedback!", {
-        icon: '👍',
-      });
-    } catch (error) {
-      console.error("Feedback error:", error);
-      toast.error("Failed to submit feedback");
-    }
+  const handleThumbsDown = (msgId) => {
+    setDislikedMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(msgId)) {
+        newSet.delete(msgId); // Toggle off
+      } else {
+        newSet.add(msgId);
+        setLikedMessages(l => {
+          const lNew = new Set(l);
+          lNew.delete(msgId); // Remove like if disliking
+          return lNew;
+        });
+        setFeedbackOpen(true);
+      }
+      return newSet;
+    });
   };
+
+
 
   const handleShare = async (content) => {
     if (navigator.share) {
@@ -1262,6 +1570,15 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         )}
       </AnimatePresence>
 
+      <ModelSelector
+        isOpen={isModelSelectorOpen}
+        onClose={() => setIsModelSelectorOpen(false)}
+        toolType={selectedToolType}
+        currentModel={selectedToolType ? toolModels[selectedToolType] : 'gemini-flash'}
+        onSelectModel={handleModelSelect}
+        pricing={TOOL_PRICING}
+      />
+
       <div
         className={`
           flex flex-col flex-shrink-0 bg-surface border-r border-border
@@ -1358,27 +1675,85 @@ For "Remix" requests with an attachment, analyze the attached image, then create
             </button>
 
             <div className="flex items-center gap-2 text-subtext min-w-0">
-              <span className="text-sm hidden sm:inline shrink-0">Chatting with:</span>
-              <div
-                onClick={() => alert("Agent switching coming soon!")}
-                className="flex items-center gap-2 text-maintext bg-surface px-3 py-1.5 rounded-lg border border-border cursor-pointer hover:bg-secondary transition-colors min-w-0"
-              >
-                <div className="w-5 h-5 rounded bg-primary/20 flex items-center justify-center shrink-0">
-                  <Bot className="w-3 h-3 text-primary" />
-                </div>
-                <span className="text-sm font-medium truncate">
-                  AISA <sup>TM</sup>
-                </span>
-                <ChevronDown className="w-3 h-3 text-subtext shrink-0" />
-              </div>
+              <span className="text-sm hidden md:inline shrink-0">Chatting with:</span>
+              <Menu as="div" className="relative inline-block text-left min-w-0 shrink">
+                <Menu.Button className="flex items-center gap-2 text-maintext bg-surface px-3 py-1.5 rounded-lg border border-border cursor-pointer hover:bg-secondary transition-colors truncate max-w-[140px] sm:max-w-xs">
+                  <div className="w-5 h-5 rounded bg-primary/20 flex items-center justify-center shrink-0">
+                    <img
+                      src={activeAgent.avatar || (activeAgent.agentName === 'AISA' ? '/AGENTS_IMG/AISA.png' : '/AGENTS_IMG/AIBOT.png')}
+                      alt=""
+                      className="w-4 h-4 rounded-sm object-cover"
+                      onError={(e) => { e.target.src = '/AGENTS_IMG/AISA.png' }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium truncate">
+                    {activeAgent.agentName || activeAgent.name} <sup>TM</sup>
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-subtext shrink-0" />
+                </Menu.Button>
+
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left divide-y divide-border rounded-xl bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-border">
+                    <div className="px-1 py-1 max-h-60 overflow-y-auto custom-scrollbar">
+                      {userAgents.map((agent, idx) => (
+                        <Menu.Item key={idx}>
+                          {({ active }) => (
+                            <button
+                              onClick={() => {
+                                setActiveAgent(agent);
+                                toast.success(`Switched to ${agent.agentName || agent.name}`);
+                              }}
+                              className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                } group flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium gap-3 transition-colors`}
+                            >
+                              <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${active ? 'bg-white/20' : 'bg-primary/10'}`}>
+                                <img
+                                  src={agent.avatar || (agent.agentName === 'AISA' ? '/AGENTS_IMG/AISA.png' : '/AGENTS_IMG/AIBOT.png')}
+                                  alt=""
+                                  className="w-4 h-4 rounded-sm object-cover"
+                                  onError={(e) => { e.target.src = '/AGENTS_IMG/AISA.png' }}
+                                />
+                              </div>
+                              <span className="truncate">{agent.agentName || agent.name}</span>
+                              {activeAgent.agentName === agent.agentName && (
+                                <Check className={`w-3 h-3 ml-auto ${active ? 'text-white' : 'text-primary'}`} />
+                              )}
+                            </button>
+                          )}
+                        </Menu.Item>
+                      ))}
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            {/* <button className="flex items-center gap-2 text-subtext hover:text-maintext text-sm">
-              <Monitor className="w-4 h-4" />
-              <span className="hidden sm:inline">Device</span>
-            </button> */}
+            {/* Model Selector Button */}
+            <button
+              onClick={() => {
+                setSelectedToolType('chat');
+                setIsModelSelectorOpen(true);
+              }}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-surface text-maintext hover:bg-secondary transition-colors text-xs font-medium"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span>
+                {isCompareMode ? 'Compare Mode (All)' : (TOOL_PRICING.chat.models.find(m => m.id === toolModels?.chat)?.name || 'Model')}
+              </span>
+              <ChevronDown className="w-3 h-3 text-subtext" />
+            </button>
+
+            {/* Compare Mode Toggle */}
 
           </div>
         </div>
@@ -1426,95 +1801,91 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                       } max-w-[85%] sm:max-w-[80%]`}
                   >
                     <div
-                      className={`group/bubble relative px-3 py-1.5 md:px-4 md:py-2 rounded-2xl text-sm leading-normal whitespace-pre-wrap break-words shadow-sm w-fit max-w-full ${msg.role === 'user'
+                      className={`group/bubble relative px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm w-fit max-w-full transition-all duration-300 ${msg.role === 'user'
                         ? 'bg-primary text-white rounded-tr-none'
-                        : 'bg-surface border border-border text-maintext rounded-tl-none'
+                        : `bg-surface border border-border text-maintext rounded-tl-none ${msg.id === typingMessageId ? 'ai-typing-glow ai-typing-shimmer outline outline-offset-1 outline-primary/20' : ''}`
                         }`}
                     >
 
                       {/* Attachment Display */}
-                      {msg.attachment && (
-                        <div className="mb-3 mt-1">
-                          {msg.attachment.type === 'image' ? (
-                            <div
-                              className="relative group/image overflow-hidden rounded-xl border border-white/20 shadow-lg transition-all hover:scale-[1.02] cursor-pointer"
-                              onClick={() => setViewingDoc(msg.attachment)}
-                            >
-                              <img
-                                src={msg.attachment.url}
-                                alt="Attachment"
-                                className="w-full max-w-[320px] max-h-[400px] object-contain bg-black/5"
-                              />
-                              <button
-                                onClick={() => handleDownload(msg.attachment.url, msg.attachment.name)}
-                                className="absolute top-2 right-2 p-2 bg-black/40 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-all hover:bg-black/60 backdrop-blur-md border border-white/10"
-                                title="Download"
-                              >
-                                <Download className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${msg.role === 'user' ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-secondary/30 border-border hover:bg-secondary/50'}`}>
-                              <div
-                                className="flex-1 flex items-center gap-3 min-w-0 cursor-pointer p-1.5 -ml-1.5 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                                onClick={() => setViewingDoc(msg.attachment)}
-                              >
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${(() => {
-                                  const name = msg.attachment.name.toLowerCase();
-                                  if (msg.role === 'user') return 'bg-white shadow-sm';
-
-                                  if (name.endsWith('.pdf')) return 'bg-red-50 dark:bg-red-900/20';
-                                  if (name.match(/\.(doc|docx)$/)) return 'bg-blue-50 dark:bg-blue-900/20';
-                                  if (name.match(/\.(xls|xlsx|csv)$/)) return 'bg-emerald-50 dark:bg-emerald-900/20';
-                                  if (name.match(/\.(ppt|pptx)$/)) return 'bg-orange-50 dark:bg-orange-900/20';
-                                  return 'bg-secondary';
-                                })()
-                                  }`}>
-                                  {(() => {
-                                    const name = msg.attachment.name.toLowerCase();
-                                    const baseClass = "w-6 h-6";
-
-                                    if (name.match(/\.(xls|xlsx|csv)$/)) {
-                                      return <FileSpreadsheet className={`${baseClass} text-emerald-600`} />;
-                                    }
-                                    if (name.match(/\.(ppt|pptx)$/)) {
-                                      return <Presentation className={`${baseClass} text-orange-600`} />;
-                                    }
-                                    if (name.endsWith('.pdf')) {
-                                      return <FileText className={`${baseClass} text-red-600`} />;
-                                    }
-                                    if (name.match(/\.(doc|docx)$/)) {
-                                      return <File className={`${baseClass} text-blue-600`} />;
-                                    }
-                                    return <File className={`${baseClass} text-primary`} />;
-                                  })()}
+                      {(msg.attachments || msg.attachment) && (
+                        <div className="flex flex-col gap-3 mb-3 mt-1">
+                          {(msg.attachments || (msg.attachment ? [msg.attachment] : [])).map((att, idx) => (
+                            <div key={idx} className="w-full">
+                              {att.type === 'image' ? (
+                                <div
+                                  className="relative group/image overflow-hidden rounded-xl border border-white/20 shadow-lg transition-all hover:scale-[1.01] cursor-pointer max-w-[320px]"
+                                  onClick={() => setViewingDoc(att)}
+                                >
+                                  <img
+                                    src={att.url}
+                                    alt="Attachment"
+                                    className="w-full h-auto max-h-[400px] object-contain bg-black/5"
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDownload(att.url, att.name);
+                                    }}
+                                    className="absolute top-2 right-2 p-2 bg-black/40 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-all hover:bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center"
+                                    title="Download"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </button>
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-semibold truncate text-xs mb-0.5">{msg.attachment.name}</p>
-                                  <p className="text-[10px] opacity-70 uppercase tracking-tight font-medium">
-                                    {(() => {
-                                      const name = msg.attachment.name.toLowerCase();
-                                      if (name.endsWith('.pdf')) return 'PDF • Preview';
-                                      if (name.match(/\.(doc|docx)$/)) return 'WORD • Preview';
-                                      if (name.match(/\.(xls|xlsx|csv)$/)) return 'EXCEL';
-                                      if (name.match(/\.(ppt|pptx)$/)) return 'SLIDES';
-                                      return 'DOCUMENT';
-                                    })()}
-                                  </p>
+                              ) : (
+                                <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${msg.role === 'user' ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-secondary/30 border-border hover:bg-secondary/50'}`}>
+                                  <div
+                                    className="flex-1 flex items-center gap-3 min-w-0 cursor-pointer p-0.5 rounded-lg"
+                                    onClick={() => setViewingDoc(att)}
+                                  >
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${(() => {
+                                      const name = (att.name || '').toLowerCase();
+                                      if (msg.role === 'user') return 'bg-white shadow-sm';
+                                      if (name.endsWith('.pdf')) return 'bg-red-50 dark:bg-red-900/20';
+                                      if (name.match(/\.(doc|docx)$/)) return 'bg-blue-50 dark:bg-blue-900/20';
+                                      if (name.match(/\.(xls|xlsx|csv)$/)) return 'bg-emerald-50 dark:bg-emerald-900/20';
+                                      if (name.match(/\.(ppt|pptx)$/)) return 'bg-orange-50 dark:bg-orange-900/20';
+                                      return 'bg-secondary';
+                                    })()}`}>
+                                      {(() => {
+                                        const name = (att.name || '').toLowerCase();
+                                        const baseClass = "w-6 h-6";
+                                        if (name.match(/\.(xls|xlsx|csv)$/)) return <FileSpreadsheet className={`${baseClass} text-emerald-600`} />;
+                                        if (name.match(/\.(ppt|pptx)$/)) return <Presentation className={`${baseClass} text-orange-600`} />;
+                                        if (name.endsWith('.pdf')) return <FileText className={`${baseClass} text-red-600`} />;
+                                        if (name.match(/\.(doc|docx)$/)) return <File className={`${baseClass} text-blue-600`} />;
+                                        return <File className={`${baseClass} text-primary`} />;
+                                      })()}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-semibold truncate text-xs mb-0.5">{att.name || 'File'}</p>
+                                      <p className="text-[10px] opacity-70 uppercase tracking-tight font-medium">
+                                        {(() => {
+                                          const name = (att.name || '').toLowerCase();
+                                          if (name.endsWith('.pdf')) return 'PDF • Preview';
+                                          if (name.match(/\.(doc|docx)$/)) return 'WORD • Preview';
+                                          if (name.match(/\.(xls|xlsx|csv)$/)) return 'EXCEL';
+                                          if (name.match(/\.(ppt|pptx)$/)) return 'SLIDES';
+                                          return 'DOCUMENT';
+                                        })()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDownload(att.url, att.name);
+                                    }}
+                                    className={`p-2 rounded-lg transition-colors shrink-0 ${msg.role === 'user' ? 'hover:bg-white/20 text-white' : 'hover:bg-primary/10 text-primary'}`}
+                                    title="Download"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </button>
                                 </div>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownload(msg.attachment.url, msg.attachment.name);
-                                }}
-                                className={`p-2 rounded-lg transition-colors shrink-0 ${msg.role === 'user' ? 'hover:bg-white/20' : 'hover:bg-primary/10 text-primary'}`}
-                                title="Download"
-                              >
-                                <Download className="w-4 h-4" />
-                              </button>
+                              )}
                             </div>
-                          )}
+                          ))}
                         </div>
                       )}
 
@@ -1551,7 +1922,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                         </div>
                       ) : (
                         msg.content && (
-                          <div id={`msg-text-${msg.id}`} className={`max-w-full break-words text-sm md:text-base leading-normal whitespace-normal ${msg.role === 'user' ? 'text-white' : 'text-maintext'}`}>
+                          <div id={`msg-text-${msg.id}`} className={`max-w-full break-words text-sm md:text-base leading-relaxed whitespace-normal ${msg.role === 'user' ? 'text-white' : 'text-maintext'}`}>
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               components={{
@@ -1574,7 +1945,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                                     </a>
                                   );
                                 },
-                                p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                                p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
                                 ul: ({ children }) => <ul className="list-disc pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ul>,
                                 ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ol>,
                                 li: ({ children }) => <li className="mb-1 last:mb-0">{children}</li>,
@@ -1678,17 +2049,17 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                             </button>
                             <button
                               onClick={() => handleThumbsUp(msg.id)}
-                              className="text-subtext hover:text-primary transition-colors"
+                              className={`transition-colors ${likedMessages.has(msg.id) ? 'text-blue-500' : 'text-subtext hover:text-primary'}`}
                               title="Helpful"
                             >
-                              <ThumbsUp className="w-4 h-4" />
+                              <ThumbsUp className={`w-4 h-4 ${likedMessages.has(msg.id) ? 'fill-current' : ''}`} />
                             </button>
                             <button
                               onClick={() => handleThumbsDown(msg.id)}
-                              className="text-subtext hover:text-red-500 transition-colors"
+                              className={`transition-colors ${dislikedMessages.has(msg.id) ? 'text-red-500' : 'text-subtext hover:text-red-500'}`}
                               title="Not Helpful"
                             >
-                              <ThumbsDown className="w-4 h-4" />
+                              <ThumbsDown className={`w-4 h-4 ${dislikedMessages.has(msg.id) ? 'fill-current' : ''}`} />
                             </button>
                             <button
                               onClick={() => handleShare(msg.content)}
@@ -1841,62 +2212,49 @@ For "Remix" requests with an attachment, analyze the attached image, then create
           <div className="max-w-4xl mx-auto relative">
 
             {/* File Preview Area */}
-            {selectedFile && (
-              <div className="absolute bottom-full left-0 mb-4 w-full animate-in slide-in-from-bottom-2 fade-in z-20">
-                <div className="bg-surface/80 backdrop-blur-md border border-border/50 rounded-xl p-3 shadow-xl flex items-center gap-4 max-w-sm mx-auto sm:mx-0 sm:max-w-md ring-1 ring-black/5">
-                  <div className="relative group shrink-0">
-                    {selectedFile.type.startsWith('image/') ? (
-                      <div className="relative overflow-hidden rounded-lg border border-white/10 shadow-sm w-16 h-16 sm:w-20 sm:h-20 bg-black/5">
-                        <img src={filePreview} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-
-                        {/* Magic AI Tools Overlay */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1 gap-1">
-                          <button
-                            onClick={() => handleImageAction('remove-bg')}
-                            className="text-[8px] bg-primary text-white w-full py-0.5 rounded font-bold uppercase transition-transform active:scale-95"
-                          >
-                            No BG
-                          </button>
-                          <button
-                            onClick={() => handleImageAction('remix')}
-                            className="text-[8px] bg-sky-400 text-white w-full py-0.5 rounded font-bold uppercase transition-transform active:scale-95"
-                          >
-                            Remix
-                          </button>
+            {filePreviews.length > 0 && (
+              <div className="absolute bottom-full left-0 right-0 mb-4 px-2 overflow-x-auto custom-scrollbar no-scrollbar flex gap-3 pb-2 z-20 pointer-events-auto">
+                {filePreviews.map((preview) => (
+                  <div
+                    key={preview.id}
+                    className="relative shrink-0 w-64 md:w-72 bg-surface/95 dark:bg-zinc-900/95 border border-border/50 rounded-2xl p-2.5 flex items-center gap-3 shadow-xl backdrop-blur-xl animate-in slide-in-from-bottom-2 duration-300 ring-1 ring-black/5"
+                  >
+                    <div className="relative group shrink-0">
+                      {preview.type.startsWith('image/') ? (
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-border/50 bg-black/5">
+                          <img src={preview.url} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                         </div>
-                      </div>
-                    ) : (
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 shadow-sm">
-                        <FileText className="w-8 h-8 text-primary" />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shadow-sm">
+                          <FileText className="w-7 h-7 text-primary" />
+                        </div>
+                      )}
 
-                    <div className="absolute -top-2 -right-2 flex gap-1">
-                      <button
-                        onClick={() => setIsEditingImage(true)}
-                        className="p-1.5 bg-surface border border-border text-subtext hover:text-primary rounded-full hover:bg-primary/10 transition-colors shadow-sm"
-                        title="Edit image"
-                      >
-                        <Wand2 className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={handleRemoveFile}
-                        className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg hover:scale-110 active:scale-95"
-                        title="Remove file"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      <div className="absolute -top-2 -right-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(preview.id)}
+                          className="p-1 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg hover:scale-110 active:scale-95 flex items-center justify-center border-2 border-surface"
+                          title="Remove file"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1 py-1">
+                      <p className="text-sm font-semibold text-maintext truncate pr-1">{preview.name}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-[10px] text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-lg uppercase tracking-wider font-bold">
+                          {preview.type.split('/')[1]?.split('-')[0] || 'FILE'}
+                        </span>
+                        <span className="text-[10px] text-subtext font-medium">
+                          {(preview.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="min-w-0 flex-1 py-1">
-                    <p className="text-sm font-semibold text-maintext truncate">{selectedFile.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-subtext bg-surface border border-border px-1.5 py-0.5 rounded uppercase tracking-wider font-medium">{selectedFile.type.split('/')[1] || 'FILE'}</span>
-                      <span className="text-xs text-subtext">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
 
@@ -1906,6 +2264,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                 type="file"
                 ref={uploadInputRef}
                 onChange={handleFileSelect}
+                multiple
                 className="hidden"
               />
               <input
@@ -1913,6 +2272,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                 type="file"
                 ref={driveInputRef}
                 onChange={handleFileSelect}
+                multiple
                 className="hidden"
               />
               <input
@@ -1920,6 +2280,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                 type="file"
                 ref={photosInputRef}
                 onChange={handleFileSelect}
+                multiple
                 className="hidden"
                 accept="image/*"
               />
@@ -1932,56 +2293,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                 capture="environment"
               />
 
-              <AnimatePresence>
-                {isAttachMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    ref={menuRef}
-                    className="absolute bottom-full left-0 mb-3 w-60 bg-surface border border-border/50 rounded-2xl shadow-xl overflow-hidden z-30 backdrop-blur-md ring-1 ring-black/5"
-                  >
-                    <div className="p-1.5 space-y-0.5">
-                      <label
-                        htmlFor="camera-upload"
-                        onClick={() => setTimeout(() => setIsAttachMenuOpen(false), 500)}
-                        className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
-                          <Camera className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
-                        </div>
-                        <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Camera & Scan</span>
-                      </label>
 
-                      <label
-                        htmlFor="file-upload"
-                        onClick={() => setIsAttachMenuOpen(false)}
-                        className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
-                          <Paperclip className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
-                        </div>
-                        <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Upload files</span>
-                      </label>
-
-
-                      <label
-                        htmlFor="drive-upload"
-                        onClick={() => setIsAttachMenuOpen(false)}
-                        className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
-                          <Cloud className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
-                        </div>
-                        <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Add from Drive</span>
-                      </label>
-
-
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               <button
                 type="button"
@@ -1993,6 +2305,21 @@ For "Remix" requests with an attachment, analyze the attached image, then create
               >
                 <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
+
+              {/* Mobile Model Selector (Input Bar) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedToolType('chat');
+                  setIsModelSelectorOpen(true);
+                }}
+                className="sm:hidden mx-1.5 p-3 rounded-full border border-border bg-surface text-maintext hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
+                title="Select Model"
+              >
+                <Sparkles className="w-5 h-5 text-primary" />
+              </button>
+
+
 
               <div className="relative flex-1">
                 <textarea
@@ -2007,58 +2334,131 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                   onPaste={handlePaste}
                   placeholder="Ask AISA..."
                   rows={1}
-                  className={`w-full bg-surface border border-border rounded-2xl py-2 md:py-3 pl-4 sm:pl-5 text-sm md:text-base text-maintext placeholder-subtext focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm transition-all resize-none overflow-y-auto custom-scrollbar ${inputValue.trim() ? 'pr-10 md:pr-12' : 'pr-32 md:pr-40'}`}
-                  style={{ minHeight: '40px', maxHeight: '150px' }}
+                  className={`w-full bg-surface border border-border rounded-[28px] py-3.5 md:py-4 pl-5 sm:pl-6 text-base md:text-lg text-maintext placeholder-subtext focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm transition-all resize-none overflow-y-auto custom-scrollbar ${inputValue.trim() ? 'pr-14 md:pr-24' : 'pr-28 md:pr-40'}`}
+                  style={{ minHeight: '54px', maxHeight: '200px', lineHeight: '1.5' }}
                 />
-                <div className="absolute right-2 inset-y-0 flex items-center gap-0 sm:gap-1 z-10">
+                <div className="absolute right-2 bottom-2 flex items-center gap-0 sm:gap-1 z-10">
                   {isListening && (
                     <motion.div
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 rounded-full border border-red-500/20 cursor-pointer hover:bg-red-500/20 transition-colors group"
                       onClick={handleVoiceInput}
                     >
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-tight">STOP</span>
-                      <div className="w-[1px] h-3 bg-primary/20 mx-1" />
-                      <span className="text-[10px] font-mono font-bold text-primary">{formatTime(listeningTime)}</span>
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-bold text-red-500 uppercase tracking-tight">Recording...</span>
                     </motion.div>
                   )}
-                  {!inputValue.trim() && !isListening && (
+                  {!isListening && (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => setIsLiveMode(true)}
-                        className="p-2 sm:p-2.5 rounded-full text-primary hover:bg-primary/10 hover:border-primary/20 transition-all flex items-center justify-center border border-transparent"
-                        title="Live Video Call"
-                      >
-                        <Video className="w-5 h-5" />
-                      </button>
+                      {getAgentCapabilities(activeAgent.agentName, activeAgent.category).canVideo && !inputValue.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => setIsLiveMode(true)}
+                          className="p-2 sm:p-2.5 rounded-full text-primary hover:bg-primary/10 hover:border-primary/20 transition-all flex items-center justify-center border border-transparent"
+                          title="Live Video Call"
+                        >
+                          <Video className="w-5 h-5" />
+                        </button>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={handleVoiceInput}
-                        className={`p-2 sm:p-2.5 rounded-full transition-all flex items-center justify-center border border-transparent ${isListening ? 'bg-primary text-white animate-pulse shadow-md shadow-primary/30' : 'text-primary hover:bg-primary/10 hover:border-primary/20'}`}
-                        title="Voice Input"
-                      >
-                        <Mic className="w-5 h-5" />
-                      </button>
+                      {getAgentCapabilities(activeAgent.agentName, activeAgent.category).canVoice && (
+                        <button
+                          type="button"
+                          onClick={handleVoiceInput}
+                          className={`p-2 sm:p-2.5 rounded-full transition-all flex items-center justify-center border border-transparent ${isListening ? 'bg-primary text-white animate-pulse shadow-md shadow-primary/30' : 'text-primary hover:bg-primary/10 hover:border-primary/20'}`}
+                          title="Voice Input"
+                        >
+                          <Mic className="w-5 h-5" />
+                        </button>
+                      )}
                     </>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={(!inputValue.trim() && !selectedFile) || isLoading}
-                    className="p-2 sm:p-2.5 rounded-full bg-primary text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
+                  {isLoading || typingMessageId ? (
+                    <button
+                      type="button"
+                      onClick={handleStop}
+                      className="p-2 sm:p-2.5 rounded-full bg-red-500 text-white hover:opacity-90 transition-colors shadow-md flex items-center justify-center animate-pulse"
+                    >
+                      <Square className="w-5 h-5 fill-current" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={(!inputValue.trim() && filePreviews.length === 0)}
+                      className="p-2 sm:p-2.5 rounded-full bg-primary text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </form>
           </div>
         </div>
       </div>
+
+      {/* Centered Attachment Menu - Moved outside relative container for better positioning */}
+      <AnimatePresence>
+        {isAttachMenuOpen && (
+          <div className="absolute bottom-[5.5rem] left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              ref={menuRef}
+              className="w-full max-w-xs bg-surface border border-border/50 rounded-2xl shadow-xl overflow-hidden backdrop-blur-md ring-1 ring-black/5 pointer-events-auto"
+            >
+              <div className="p-1.5 space-y-0.5">
+                {getAgentCapabilities(activeAgent.agentName, activeAgent.category).canCamera && (
+                  <label
+                    htmlFor="camera-upload"
+                    onClick={() => setTimeout(() => setIsAttachMenuOpen(false), 500)}
+                    className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
+                      <Camera className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Camera & Scan</span>
+                    </div>
+                  </label>
+                )}
+
+                {(getAgentCapabilities(activeAgent.agentName, activeAgent.category).canUploadFiles || true) && (
+                  <label
+                    htmlFor="file-upload"
+                    onClick={() => setIsAttachMenuOpen(false)}
+                    className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
+                      <Paperclip className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                    </div>
+                    <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Upload files</span>
+                  </label>
+                )}
+
+                {getAgentCapabilities(activeAgent.agentName, activeAgent.category).canUploadDocs && (
+                  <label
+                    htmlFor="drive-upload"
+                    onClick={() => setIsAttachMenuOpen(false)}
+                    className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
+                      <Cloud className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-maintext group-hover:text-primary transition-colors">Add from Drive</span>
+                    </div>
+                  </label>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       {/* Live AI Modal */}
       <AnimatePresence>
         {isLiveMode && (
@@ -2149,6 +2549,14 @@ For "Remix" requests with an attachment, analyze the attached image, then create
           </div>
         </Dialog>
       </Transition>
+      <ModelSelector
+        isOpen={isModelSelectorOpen}
+        onClose={() => setIsModelSelectorOpen(false)}
+        toolType={selectedToolType}
+        currentModel={selectedToolType ? toolModels[selectedToolType] : null}
+        onSelectModel={handleModelSelect}
+        pricing={TOOL_PRICING}
+      />
     </div>
   );
 };
