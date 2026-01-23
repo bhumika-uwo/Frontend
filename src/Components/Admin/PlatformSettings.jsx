@@ -19,7 +19,7 @@ const PlatformSettings = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-maintext mb-2">Contact Email</label>
-                        <input type="text" defaultValue="support@a-series.in" className="w-full bg-secondary border border-border rounded-lg px-4 py-2 text-sm outline-none text-maintext" />
+                        <input type="text" defaultValue="support@-series.in" className="w-full bg-secondary border border-border rounded-lg px-4 py-2 text-sm outline-none text-maintext" />
                     </div>
                 </div>
             </div>

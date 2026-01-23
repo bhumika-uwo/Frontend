@@ -284,7 +284,7 @@ const Landing = () => {
                 {[
                   { label: "Help Center", path: "#" },
                   { label: "Security & Guidelines", onClick: () => setIsSecurityModalOpen(true) },
-                  { label: "Contact Us", path: "mailto:contact@ai-mall.in" },
+                  { label: "Contact Us", path: "/contact-us" },
                   { label: "Status Page", path: "#" }
                 ].map((link, i) => (
                   <li key={i}>
@@ -324,12 +324,12 @@ const Landing = () => {
                   </p>
                 </a>
                 <a
-                  href="mailto:support@ai-mall.in"
+                  href="mailto:admin@uwo24.com"
                   className="flex items-center gap-3 group"
                 >
                   <Mail className="w-5 h-5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
                   <span className="text-sm text-subtext group-hover:text-primary transition-colors font-medium">
-                    support@ai-mall.in
+                    admin@uwo24.com
                   </span>
                 </a>
                 <a

@@ -18,6 +18,7 @@ import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import AiPersonalAssistantDashboard from './pages/AiPersonalAssistant/Dashboard';
 import UserTransactions from './pages/UserTransactions';
+import ContactUs from './pages/ContactUs';
 
 import { AppRoute } from './types';
 import { Menu } from 'lucide-react';
@@ -155,6 +156,7 @@ const NavigateProvider = () => {
         <Route path={AppRoute.E_Verification} element={<VerificationForm />} />
         <Route path={AppRoute.FORGOT_PASSWORD} element={<ForgotPassword />} />
         <Route path={AppRoute.RESET_PASSWORD} element={<ResetPassword />} />
+        <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/agentsoon" element={<ComingSoon />}></Route>
         {/* agents */}
         <Route path='/agents/aibiz' element={<AiBiz />}></Route>
