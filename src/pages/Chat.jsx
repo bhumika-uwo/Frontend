@@ -1675,7 +1675,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
             </button>
 
             <div className="flex items-center gap-2 text-subtext min-w-0">
-              <span className="text-sm hidden md:inline shrink-0">Chatting with:</span>
+              <span className="text-sm hidden md:inline shrink-0">Chat with:</span>
               <Menu as="div" className="relative inline-block text-left min-w-0 shrink">
                 <Menu.Button className="flex items-center gap-2 text-maintext bg-surface px-3 py-1.5 rounded-lg border border-border cursor-pointer hover:bg-secondary transition-colors truncate max-w-[140px] sm:max-w-xs">
                   <div className="w-5 h-5 rounded bg-primary/20 flex items-center justify-center shrink-0">

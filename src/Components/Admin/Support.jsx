@@ -10,10 +10,38 @@ const AdminSupport = () => {
     const [resolutionNote, setResolutionNote] = useState('');
     const [isResolving, setIsResolving] = useState(false);
 
-    const fetchReports = async () => {
+    const fetchInquiries = async () => {
         try {
-            const data = await apiService.getReports();
-            setReports(data);
+            const [reportsData, ticketsData] = await Promise.all([
+                apiService.getReports(),
+                apiService.getSupportTickets()
+            ]);
+
+            // Normalize reports
+            const normalizedReports = reportsData.map(r => ({
+                ...r,
+                id: r._id,
+                origin: 'report',
+                title: r.description,
+                user: r.userId?.name || 'Unknown User',
+                email: r.userId?.email || 'No Email',
+                date: r.timestamp
+            }));
+
+            // Normalize support tickets
+            const normalizedTickets = ticketsData.map(t => ({
+                ...t,
+                id: t._id,
+                origin: 'ticket',
+                type: t.issueType,
+                title: t.message,
+                user: t.userId?.name || 'Guest',
+                email: t.email,
+                date: t.createdAt,
+                priority: 'medium' // Support tickets don't have priority in model yet
+            }));
+
+            setReports([...normalizedReports, ...normalizedTickets].sort((a, b) => new Date(b.date) - new Date(a.date)));
         } catch (err) {
             console.error(err);
         } finally {
@@ -22,19 +50,23 @@ const AdminSupport = () => {
     };
 
     useEffect(() => {
-        fetchReports();
+        fetchInquiries();
     }, []);
 
     const handleResolve = async (status) => {
         if (!selectedReport) return;
         setIsResolving(true);
         try {
-            await apiService.resolveReport(selectedReport._id, status, resolutionNote);
-            await fetchReports();
+            if (selectedReport.origin === 'report') {
+                await apiService.resolveReport(selectedReport._id, status, resolutionNote);
+            } else {
+                await apiService.updateSupportTicketStatus(selectedReport._id, status, resolutionNote);
+            }
+            await fetchInquiries();
             setSelectedReport(null);
             setResolutionNote('');
         } catch (err) {
-            alert("Failed to update report");
+            alert("Failed to update inquiry");
         } finally {
             setIsResolving(false);
         }
@@ -90,18 +122,21 @@ const AdminSupport = () => {
                     <div className="overflow-y-auto flex-1 p-2 space-y-2">
                         {filteredReports.map(report => (
                             <div
-                                key={report._id}
+                                key={report.id}
                                 onClick={() => setSelectedReport(report)}
-                                className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedReport?._id === report._id ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-card border-transparent hover:bg-secondary'}`}
+                                className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedReport?.id === report.id ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-card border-transparent hover:bg-secondary'}`}
                             >
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${report.type === 'bug' ? 'bg-red-500/10 text-red-700 dark:text-red-400' : 'bg-blue-500/10 text-blue-700 dark:text-blue-400'}`}>{report.type}</span>
-                                    <span className="text-[10px] text-subtext">{new Date(report.timestamp).toLocaleDateString()}</span>
+                                    <div className="flex gap-2">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${report.origin === 'report' ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'}`}>{report.origin}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${report.type === 'bug' ? 'bg-red-500/10 text-red-700 dark:text-red-400' : 'bg-blue-500/10 text-blue-700 dark:text-blue-400'}`}>{report.type}</span>
+                                    </div>
+                                    <span className="text-[10px] text-subtext">{new Date(report.date).toLocaleDateString()}</span>
                                 </div>
-                                <h4 className="font-bold text-maintext text-sm line-clamp-1">{report.description}</h4>
+                                <h4 className="font-bold text-maintext text-sm line-clamp-1">{report.title}</h4>
                                 <div className="flex items-center gap-2 mt-2 text-xs text-subtext">
                                     <User className="w-3 h-3" />
-                                    <span>{report.userId?.name || 'Unknown User'}</span>
+                                    <span>{report.user}</span>
                                 </div>
                                 <div className="mt-2 flex items-center justify-between">
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusColor(report.status)} uppercase`}>{report.status}</span>
@@ -120,23 +155,24 @@ const AdminSupport = () => {
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-xl font-bold text-maintext">Report Details</h3>
+                                        <h3 className="text-xl font-bold text-maintext">Inquiry Details</h3>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${selectedReport.origin === 'report' ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'}`}>{selectedReport.origin}</span>
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(selectedReport.status)}`}>{selectedReport.status}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-subtext">
                                         <Clock className="w-4 h-4" />
-                                        <span>Submitted on {new Date(selectedReport.timestamp).toLocaleString()}</span>
+                                        <span>Submitted on {new Date(selectedReport.date).toLocaleString()}</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold text-maintext">{selectedReport.userId?.name || 'Unknown User'}</p>
-                                    <p className="text-xs text-subtext">{selectedReport.userId?.email || 'No Email'}</p>
+                                    <p className="font-bold text-maintext">{selectedReport.user}</p>
+                                    <p className="text-xs text-subtext">{selectedReport.email}</p>
                                 </div>
                             </div>
 
                             <div className="bg-secondary rounded-xl p-6 mb-6 border border-border">
-                                <h4 className="text-xs font-bold text-subtext uppercase tracking-wider mb-2">Description</h4>
-                                <p className="text-maintext whitespace-pre-wrap leading-relaxed">{selectedReport.description}</p>
+                                <h4 className="text-xs font-bold text-subtext uppercase tracking-wider mb-2">Message</h4>
+                                <p className="text-maintext whitespace-pre-wrap leading-relaxed">{selectedReport.title}</p>
                             </div>
 
                             <div className="mt-auto pt-6 border-t border-border">

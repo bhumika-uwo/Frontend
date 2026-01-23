@@ -2,21 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { Bell, Check, Trash2, Clock, ShieldAlert, BadgeInfo, BadgeCheck } from 'lucide-react';
 import axios from 'axios';
 import { apis } from '../types';
-import { getUserData } from '../userStore/userData';
+import { getUserData, notificationsState } from '../userStore/userData';
+import { useRecoilState } from 'recoil';
+import apiService from '../services/apiService';
 
 const Notifications = () => {
-    const [notifications, setNotifications] = useState([]);
+    const [notifications, setNotifications] = useRecoilState(notificationsState);
     const [loading, setLoading] = useState(true);
     const token = getUserData()?.token;
 
     useEffect(() => {
         const fetchNotifications = async () => {
             try {
-                const res = await axios.get(apis.notifications, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    timeout: 5000 // 5 seconds timeout
-                });
-                setNotifications(res.data);
+                const data = await apiService.getNotifications();
+                setNotifications(data);
             } catch (err) {
                 console.error('Error fetching notifications:', err);
                 // On error, we still clear loading to show the demo fallback
@@ -28,14 +27,13 @@ const Notifications = () => {
         if (token) {
             fetchNotifications();
         }
-    }, [token]);
+    }, [token, setNotifications]);
 
     const markAsRead = async (id) => {
         try {
-            await axios.put(`${apis.notifications}/read/${id}`, {}, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
+            await apiService.markNotificationRead(id);
+            // Update global state immediately
+            setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         } catch (err) {
             console.error('Error marking as read:', err);
         }

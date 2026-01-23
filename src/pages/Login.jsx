@@ -37,9 +37,9 @@ const Login = () => {
       localStorage.setItem("token", res.data.token)
 
     }).catch((err) => {
-      console.log(err.response.data.error);
+      console.log(err.response?.data?.error || err.message);
       setError(true)
-      setMessage(err.response.data.error || "Somthing went Wrong")
+      setMessage(err.response?.data?.error || "Something went wrong. Please check your connection or server status.")
     }).finally(() => {
       setLoading(false)
 

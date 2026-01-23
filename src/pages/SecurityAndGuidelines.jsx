@@ -8,36 +8,26 @@ const SecurityAndGuidelines = () => {
     const sections = [
         {
             id: 1,
-            title: "1. Data Privacy & Protection",
+            title: "1. Core Promise: 'Your Data is Yours'",
             icon: <Lock className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-4">
-                    <p className="text-subtext">A-Series™ is committed to safeguarding user data in accordance with applicable data protection laws, including but not limited to GDPR and CCPA.</p>
+                    <p className="text-subtext">A-Series™ operates under a strict <span className="text-maintext font-bold">"Zero-Training"</span> policy. Your private data (documents, chat logs, images) is never used to train our public models.</p>
 
                     <div className="pl-4 border-l-2 border-primary/20 space-y-3">
                         <div>
-                            <h4 className="font-semibold text-maintext">1.1 Data Collection</h4>
-                            <p className="text-sm text-subtext">A-Series™ may collect personal and technical information including account details, usage metadata, device identifiers, and file access permissions, solely for legitimate business and operational purposes.</p>
+                            <h4 className="font-semibold text-maintext">1.1 Compliance with Indian Law (DPDP Act 2023)</h4>
+                            <p className="text-sm text-subtext">As a "Data Fiduciary," we adhere to the Digital Personal Data Protection Act, 2023. This includes consent-based collection, right to withdrawal, and grievance redressal.</p>
                         </div>
 
                         <div>
-                            <h4 className="font-semibold text-maintext">1.2 Data Usage</h4>
-                            <p className="text-sm text-subtext mb-2">Collected data shall be used exclusively to:</p>
-                            <ul className="list-disc list-inside text-sm text-subtext ml-2 space-y-1">
-                                <li>Provide and operate platform services</li>
-                                <li>Improve performance, reliability, and security</li>
-                                <li>Communicate important updates or security notices</li>
-                            </ul>
+                            <h4 className="font-semibold text-maintext">1.2 Right to be Forgotten</h4>
+                            <p className="text-sm text-subtext">Upon request, A-Series™ will permanently delete all your account data, chat history, and generated assets within <span className="font-bold">30 days</span>.</p>
                         </div>
 
                         <div>
-                            <h4 className="font-semibold text-maintext">1.3 Data Sharing</h4>
-                            <p className="text-sm text-subtext">A-Series™ does not sell personal data. Data may be shared with trusted third-party service providers strictly for operational requirements and in compliance with industry security standards.</p>
-                        </div>
-
-                        <div>
-                            <h4 className="font-semibold text-maintext">1.4 User Rights</h4>
-                            <p className="text-sm text-subtext">Users retain the right to access, rectify, or request deletion of their data by contacting <a href="mailto:contact@a-series.in" className="text-primary hover:underline">contact@a-series.in</a>.</p>
+                            <h4 className="font-semibold text-maintext">1.3 Grievance Redressal</h4>
+                            <p className="text-sm text-subtext">Our Data Protection Officer (DPO) handles privacy complaints within 72 hours. Contact: <a href="mailto:privacy@a-series.in" className="text-primary hover:underline">privacy@a-series.in</a></p>
                         </div>
                     </div>
                 </div>
@@ -45,58 +35,62 @@ const SecurityAndGuidelines = () => {
         },
         {
             id: 2,
-            title: "2. Account Security Responsibilities",
+            title: "2. Technical Security (The 'Vertex Shield')",
             icon: <Shield className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-3">
-                    <div className="flex gap-3 items-start">
-                        <span className="text-primary font-bold">2.1</span>
-                        <p className="text-subtext">Users are solely responsible for maintaining the confidentiality of their account credentials.</p>
-                    </div>
-                    <div className="flex gap-3 items-start">
-                        <span className="text-primary font-bold">2.2</span>
-                        <p className="text-subtext">A-Series™ employs industry-standard security measures, including encryption and secure session handling, to protect accounts; however, users must immediately report unauthorized access or suspected breaches.</p>
+                    <p className="text-subtext">We leverage enterprise-grade security of Google Vertex AI. All data is <span className="font-bold">encrypted at rest (AES-256)</span> and in transit (TLS 1.2+).</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-subtext">
+                        <div className="p-3 bg-surface rounded-lg border border-border">
+                            <h4 className="font-bold text-maintext mb-1">Data Residency</h4>
+                            <p>Data stored in Google Cloud India regions (Mumbai/Delhi) for Indian enterprise clients.</p>
+                        </div>
+                        <div className="p-3 bg-surface rounded-lg border border-border">
+                            <h4 className="font-bold text-maintext mb-1">Access Control</h4>
+                            <p>Strict IAM policies ensure even A-Series engineers cannot view private chats without audit.</p>
+                        </div>
                     </div>
                 </div>
             )
         },
         {
             id: 3,
-            title: "3. Acceptable Use & Prohibited Conduct",
+            title: "3. Acceptable Use Policy (Ethical Guardrails)",
             icon: <AlertTriangle className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-3">
-                    <p className="text-subtext">Users agree not to engage in any activity that may compromise the platform, including but not limited to:</p>
+                    <p className="text-subtext">To maintain a safe ecosystem, we strictly prohibit:</p>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {[
-                            "Illegal or unauthorized use of services",
-                            "Reverse engineering source code or AI models",
-                            "Uploading malicious or offensive content",
-                            "Attempting to bypass security controls"
+                            "NSFW/Adult Content generation",
+                            "Hate Speech & Discrimination",
+                            "Deepfakes & Impersonation",
+                            "Political Campaigning & Propaganda",
+                            "Unprofessional Medical/Legal Advice"
                         ].map((item, i) => (
                             <li key={i} className="flex items-center gap-2 text-sm text-subtext bg-surface p-2 rounded-lg border border-border">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                                 {item}
                             </li>
                         ))}
                     </ul>
-                    <p className="text-xs text-subtext mt-2 italic">A-Series™ reserves the right to suspend or terminate accounts found in violation of these guidelines.</p>
+                    <p className="text-xs text-subtext mt-2 italic">Violation of these policies will result in immediate account suspension.</p>
                 </div>
             )
         },
         {
             id: 4,
-            title: "4. AI Usage & Content Disclaimer",
+            title: "4. AI Safety & Disclaimers",
             icon: <Scale className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-3">
                     <div className="bg-surface/50 p-3 rounded-lg border border-border">
-                        <h4 className="font-semibold text-maintext text-sm mb-1">4.1 Accuracy Disclaimer</h4>
-                        <p className="text-xs text-subtext">AI-generated outputs are provided on an “as-is” basis and may contain inaccuracies.</p>
+                        <h4 className="font-semibold text-maintext text-sm mb-1">4.1 Hallucination Warning</h4>
+                        <p className="text-xs text-subtext">AI models can sometimes generate incorrect info. Users must verify critical facts (dates, math, historical events).</p>
                     </div>
                     <div className="bg-surface/50 p-3 rounded-lg border border-border">
-                        <h4 className="font-semibold text-maintext text-sm mb-1">4.2 Reliability Disclaimer</h4>
-                        <p className="text-xs text-subtext">Users acknowledge that A-Series™ shall not be held responsible for decisions or outcomes arising from reliance on AI-generated content, including legal, financial, or medical decisions.</p>
+                        <h4 className="font-semibold text-maintext text-sm mb-1">4.2 Watermarking (SynthID)</h4>
+                        <p className="text-xs text-subtext">AI-generated media on Free/Starter plans embed a Digital Watermark (SynthID) for authenticity tracking.</p>
                     </div>
                 </div>
             )

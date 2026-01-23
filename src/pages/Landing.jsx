@@ -2,28 +2,26 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   ArrowRight, Bot, Zap, Shield, CircleUser,
-  Github,
+  Github, X,
   Linkedin, Mail, MapPin, Phone, Facebook, Instagram, Youtube, MessageSquare, MessageCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { logo, name } from '../constants';
 import { getUserData } from '../userStore/userData';
 import { AppRoute } from '../types';
-import LandingLiveDemoModal from '../Components/LiveDemo/LandingLiveDemoModal';
-import { useRecoilState } from 'recoil';
-import { demoModalState } from '../userStore/demoStore';
-import SecurityModal from '../Components/LiveDemo/SecurityModal';
 import { FaXTwitter } from "react-icons/fa6";
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Link } from 'react-router';
+import HelpFAQModal from '../Components/Help/HelpFAQModal';
 // Added Link import which was missing
 
 const Landing = () => {
   const navigate = useNavigate();
   const user = getUserData();
-  const [demoState, setDemoState] = useRecoilState(demoModalState);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(null); // 'privacy' | 'terms' | 'cookie'
   const { theme, setTheme } = useTheme();
   const btnClass = "px-8 py-4 bg-surface border border-border rounded-2xl font-bold text-lg text-maintext hover:bg-secondary transition-all duration-300 flex items-center justify-center gap-2";
 
@@ -189,7 +187,7 @@ const Landing = () => {
                 <span className="text-2xl font-black tracking-tighter text-maintext">{name}</span>
               </div>
               <p className="text-sm text-subtext leading-relaxed max-w-sm">
-                A-Series™ — India’s First AI App Marketplace 🚀<br />
+                A-Series™ - India’s First AI App Marketplace <br />
                 100 AI Apps | A-Series™ | Partner Integrations<br />
                 Powered by UWO™
               </p>
@@ -262,8 +260,6 @@ const Landing = () => {
                 {[
                   { label: "Marketplace", onClick: () => navigate(AppRoute.DASHBOARD + "/marketplace") },
                   { label: "My Agents", onClick: () => navigate(AppRoute.DASHBOARD + "/agents") },
-                  { label: "Become a Vendor", onClick: () => navigate("/vendor") },
-                  { label: "Live Demos", onClick: () => setDemoState({ ...demoState, isOpen: true }) }
                 ].map((link, i) => (
                   <li key={i}>
                     <button
@@ -282,7 +278,7 @@ const Landing = () => {
               <h4 className="text-sm font-bold text-maintext uppercase tracking-widest mb-6">Support</h4>
               <ul className="space-y-4">
                 {[
-                  { label: "Help Center", path: "#" },
+                  { label: "Help Center", onClick: () => setIsHelpModalOpen(true) },
                   { label: "Security & Guidelines", onClick: () => setIsSecurityModalOpen(true) },
                   { label: "Contact Us", path: "/contact-us" },
                   { label: "Status Page", path: "#" }
@@ -351,24 +347,131 @@ const Landing = () => {
               © {new Date().getFullYear()} {name}. All rights reserved. Partnered with UWO-LINK™.
             </p>
             <div className="flex items-center gap-8">
-              <a href="#" className="text-xs text-subtext hover:text-maintext transition-colors font-medium">Privacy Policy</a>
-              <a href="#" className="text-xs text-subtext hover:text-maintext transition-colors font-medium">Terms of Service</a>
-              <a href="#" className="text-xs text-subtext hover:text-maintext transition-colors font-medium">Cookie Policy</a>
+              <button onClick={() => setPolicyOpen('privacy')} className="text-xs text-subtext hover:text-maintext transition-colors font-medium">Privacy Policy</button>
+              <button onClick={() => setPolicyOpen('terms')} className="text-xs text-subtext hover:text-maintext transition-colors font-medium">Terms of Service</button>
+              <button onClick={() => setPolicyOpen('cookie')} className="text-xs text-subtext hover:text-maintext transition-colors font-medium">Cookie Policy</button>
             </div>
           </div>
         </div>
       </footer>
 
-      <LandingLiveDemoModal
-        isOpen={demoState.isOpen}
-        onClose={() => setDemoState({ ...demoState, isOpen: false })}
+      <HelpFAQModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        user={user}
       />
 
-      <SecurityModal
-        isOpen={isSecurityModalOpen}
-        onClose={() => setIsSecurityModalOpen(false)}
+      {/* Policy Modal */}
+      <PolicyModal
+        isOpen={!!policyOpen}
+        onClose={() => setPolicyOpen(null)}
+        type={policyOpen}
       />
     </div >
+  );
+};
+
+const PolicyModal = ({ isOpen, onClose, type }) => {
+  if (!isOpen) return null;
+
+  const content = {
+    privacy: {
+      title: "Privacy Policy",
+      sections: [
+        {
+          h: "Compliance with Indian Law (DPDP Act 2023)",
+          p: "As a 'Data Fiduciary', we adhere to the mandatory standards of the Digital Personal Data Protection Act, 2023. We collect only the data necessary to provide our service."
+        },
+        {
+          h: "Core Promise: Zero-Training",
+          p: "We operate under a strict 'Zero-Training' policy for our paid workspaces. Your private workspace data (documents, chat logs, images) is never used to train public AI models."
+        },
+        {
+          h: "Right to be Forgotten",
+          p: "Upon request, we will permanently delete all your account data, chat history, and generated assets from our servers within 30 days."
+        },
+        {
+          h: "Grievance Redressal",
+          p: "Our Data Protection Officer (DPO) handles privacy complaints within 72 hours. Contact: privacy@a-series.in"
+        }
+      ]
+    },
+    terms: {
+      title: "Terms of Service",
+      sections: [
+        {
+          h: "Intellectual Property (IP)",
+          p: "You retain 100% ownership rights to all content generated by our AI agents (text, images, and video)."
+        },
+        {
+          h: "Acceptable Use Policy",
+          p: "We strictly prohibit: NSFW/Adult Content, Hate Speech, Deepfakes, Impersonation, and Political Propaganda at scale."
+        },
+        {
+          h: "AI Safety Disclaimer",
+          p: "AI models can sometimes generate incorrect information. Users are advised to verify critical facts (dates, math, historical events)."
+        },
+        {
+          h: "High-Risk Use Cases",
+          p: "Our AI is an assistant, not a professional. It must not be used as the sole source for critical medical diagnoses or legal judgments."
+        }
+      ]
+    },
+    cookie: {
+      title: "Cookie Policy",
+      sections: [
+        {
+          h: "How we use Cookies",
+          p: "A-Series™ uses cookies for functionality, security, and optimization. These help us remember your preferences and ensure your session remains secure."
+        },
+        {
+          h: "Types of Cookies",
+          p: "We use essential cookies for login persistence and analytical cookies (PostHog/Google Analytics) to improve our platform performance."
+        },
+        {
+          h: "Third Party Cookies",
+          p: "Third-party services like Stripe/Razorpay and Google Cloud may set cookies to facilitate payment and cloud processing."
+        }
+      ]
+    }
+  };
+
+  const active = content[type] || content.privacy;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-secondary border border-border rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+      >
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-maintext">{active.title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-surface rounded-xl text-subtext transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="p-8 overflow-y-auto space-y-8 custom-scrollbar">
+          {active.sections.map((s, i) => (
+            <div key={i} className="space-y-3">
+              <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                {s.h}
+              </h3>
+              <p className="text-subtext leading-relaxed">{s.p}</p>
+            </div>
+          ))}
+        </div>
+        <div className="p-6 border-t border-border bg-secondary/50 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold hover:opacity-90 transition-opacity"
+          >
+            Got it
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 };
 

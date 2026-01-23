@@ -227,49 +227,7 @@ export const apiService = {
     }
   },
 
-  async getVendorRevenue() {
-    try {
-      const response = await apiClient.get('/revenue/vendor');
-      return response.data;
-    } catch (error) {
-      console.error("Failed to fetch vendor revenue:", error);
-      throw error;
-    }
-  },
-
-  async getAdminRevenueStats() {
-    try {
-      const response = await apiClient.get('/revenue/admin');
-      return response.data;
-    } catch (error) {
-      console.error("Failed to fetch admin revenue:", error);
-      // Fallback or rethrow
-      return {
-        overview: { totalGross: 0, totalVendorPayouts: 0, totalPlatformNet: 0 },
-        appPerformance: []
-      };
-    }
-  },
-
-  async getVendorTransactions() {
-    try {
-      const response = await apiClient.get('/revenue/transactions');
-      return response.data;
-    } catch (error) {
-      console.error("Failed to fetch vendor transactions:", error);
-      throw error;
-    }
-  },
-
-  async getAdminTransactions() {
-    try {
-      const response = await apiClient.get('/revenue/admin/transactions');
-      return response.data;
-    } catch (error) {
-      console.error("Failed to fetch admin transactions:", error);
-      return []; // Return empty array on error
-    }
-  },
+  // Revenue endpoints for vendor/admin removed as per feature decommissioning.
 
   async downloadInvoice(transactionId) {
     try {
@@ -442,6 +400,27 @@ export const apiService = {
       return response.data;
     } catch (error) {
       console.error("Failed to resolve report:", error);
+      throw error;
+    }
+  },
+
+  // --- Support Tickets ---
+  async getSupportTickets() {
+    try {
+      const response = await apiClient.get('/support');
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch support tickets:", error);
+      return [];
+    }
+  },
+
+  async updateSupportTicketStatus(id, status, resolutionNote) {
+    try {
+      const response = await apiClient.put(`/support/${id}/status`, { status, resolutionNote });
+      return response.data;
+    } catch (error) {
+      console.error("Failed to update support ticket status:", error);
       throw error;
     }
   },
