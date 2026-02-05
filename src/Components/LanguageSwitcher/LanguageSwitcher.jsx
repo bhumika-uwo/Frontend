@@ -79,7 +79,7 @@ const LanguageSwitcher = ({ variant = 'default' }) => {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className={`absolute mt-2 w-56 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-[100] ${isLanding ? 'right-0 lg:right-auto' : 'right-0'
+                        className={`absolute mt-2 w-72 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-[999] ${isLanding ? 'right-0' : 'right-0'
                             }`}
                     >
                         <div className="p-3 bg-secondary/30 border-b border-border flex items-center justify-between">
@@ -103,8 +103,8 @@ const LanguageSwitcher = ({ variant = 'default' }) => {
                                         : 'text-maintext hover:bg-secondary'
                                         }`}
                                 >
-                                    <span className="text-sm font-medium">{getNativeName(lang)}</span>
-                                    {language === lang && <Check className="w-4 h-4" />}
+                                    <span className="text-sm font-medium truncate">{getNativeName(lang)}</span>
+                                    {language === lang && <Check className="w-4 h-4 flex-shrink-0 ml-2" />}
                                 </button>
                             ))}
                         </div>
