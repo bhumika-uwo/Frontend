@@ -395,16 +395,6 @@ const Profile = () => {
     };
 
     const preferenceItems = [
-        {
-            key: 'language',
-            label: t('changeLanguage'),
-            value: (
-                <div className="flex items-center gap-2">
-                    <img src={getFlagUrl(regionFlags[region] || 'us')} alt={region} className="w-5 h-3.5 object-cover rounded-sm shadow-sm" />
-                    <span>{t(`regions.${region}`) || region} ({language})</span>
-                </div>
-            )
-        },
         { key: 'theme', label: t('theme'), value: theme === 'light' ? t('lightMode') : t('darkMode') },
         { key: 'timezone', label: t('timezone'), value: translateTimezone(preferences.timezone) },
         { key: 'currency', label: t('currency'), value: preferences.currency }
@@ -552,64 +542,7 @@ const Profile = () => {
                                             </div>
                                         </div>
 
-                                        {/* Language Dropdown */}
-                                        {item.key === 'language' && activeSection === 'language' && (
-                                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="absolute z-50 top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-4 min-w-[280px]">
-                                                {selectionMode === 'language' ? (
-                                                    <div className="space-y-4">
-                                                        <h3 className="text-sm font-bold text-maintext border-b pb-2">{t('changeLanguage')}</h3>
-                                                        <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
-                                                            {languages?.sort().map(lang => (
-                                                                <button
-                                                                    key={lang}
-                                                                    onClick={() => handleLanguageChange(lang)}
-                                                                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-3 transition-colors ${language === lang ? 'bg-sky-400/10 text-sky-600' : 'text-maintext hover:bg-secondary'}`}
-                                                                >
-                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${language === lang ? 'border-sky-400' : 'border-border group-hover:border-subtext'}`}>
-                                                                        {language === lang && <div className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-sm" />}
-                                                                    </div>
-                                                                    {getNativeName(lang)}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                        <div className="pt-3 border-t mt-3">
-                                                            <div className="flex items-center justify-between px-1 mb-3">
-                                                                <div className="flex items-center gap-2 text-xs text-subtext">
-                                                                    <img src={getFlagUrl(regionFlags[region] || 'us')} className="w-4 h-3 object-cover rounded-sm shadow-sm border border-border/50" alt="" />
-                                                                    <span>{t('shoppingIn')} <b>{t(`regions.${region}`) || region}</b></span>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => setSelectionMode('region')}
-                                                                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-primary font-bold text-xs hover:bg-primary/5 transition-all group"
-                                                            >
-                                                                <span>{t('profilePage.changeCountryRegion')}</span>
-                                                                <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center gap-2 mb-4">
-                                                            <button onClick={() => setSelectionMode('language')} className="p-1 hover:bg-secondary rounded-lg"><ChevronRight className="w-4 h-4 rotate-180" /></button>
-                                                            <h3 className="text-sm font-bold text-maintext">{t('profilePage.selectCountryRegion')}</h3>
-                                                        </div>
-                                                        <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
-                                                            {Object.keys(regions).map(r => (
-                                                                <button
-                                                                    key={r}
-                                                                    onClick={() => { setRegion(r); setSelectionMode('language'); }}
-                                                                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors flex items-center gap-3 ${region === r ? 'bg-primary/10 text-primary' : 'text-maintext hover:bg-secondary'}`}
-                                                                >
-                                                                    <img src={getFlagUrl(regionFlags[r] || 'us')} className="w-5 h-3.5 object-cover rounded-sm shadow-sm" alt="" />
-                                                                    {t(`regions.${r}`) || r}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </motion.div>
-                                        )}
+
 
                                         {/* Theme Dropdown */}
                                         {item.key === 'theme' && activeSection === 'theme' && (

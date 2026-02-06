@@ -13,6 +13,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Link } from 'react-router';
+import LanguageSwitcher from '../Components/LanguageSwitcher/LanguageSwitcher';
 import PolicyModal from '../Components/PolicyModal';
 import HelpFAQModal from '../Components/Help/HelpFAQModal';
 import { apiService } from '../services/apiService';
@@ -71,6 +72,7 @@ const Landing = () => {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          <LanguageSwitcher variant="landing" />
 
 
 

@@ -146,7 +146,6 @@ const TrustSafetyCompliance = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <LanguageSwitcher />
                     </div>
                 </div>
             </header>

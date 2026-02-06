@@ -112,7 +112,6 @@ const DashboardLayout = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <LanguageSwitcher />
               <UserDropdown isMobile={true} />
             </div>
           </div>
