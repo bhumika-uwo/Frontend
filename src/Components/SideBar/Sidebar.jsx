@@ -226,7 +226,10 @@ const Sidebar = ({ isOpen, onClose }) => {
           {user && user.email ? (
             <div
               className="rounded-xl border border-transparent flex items-center gap-2 p-2 hover:bg-surface transition-colors cursor-pointer group"
-              onClick={() => navigate(AppRoute.PROFILE)}
+              onClick={() => {
+                navigate(AppRoute.PROFILE);
+                onClose();
+              }}
             >
               <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0 overflow-hidden border border-primary/10 group-hover:bg-primary/30 transition-colors">
                 {user.avatar ? (
