@@ -117,21 +117,22 @@ const HelpFAQModal = ({ isOpen, onClose, user }) => {
                         <div className="flex flex-col gap-6">
                             <div>
                                 <label className="block text-sm font-bold text-maintext mb-2">{t('faqHelp.issueCategory')}</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <select
+                                    value={issueType}
+                                    onChange={(e) => setIssueType(e.target.value)}
+                                    className="w-full p-4 rounded-2xl bg-secondary border-2 border-border focus:border-primary outline-none text-maintext font-medium transition-all cursor-pointer hover:bg-surface appearance-none bg-no-repeat bg-right pr-12"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235555ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                                        backgroundPosition: 'right 1rem center',
+                                        backgroundSize: '1.5rem'
+                                    }}
+                                >
                                     {issueOptions.map((opt) => (
-                                        <button
-                                            key={opt}
-                                            onClick={() => setIssueType(opt)}
-                                            className={`p-3 rounded-xl border text-sm font-medium transition-all flex items-center justify-between group ${issueType === opt
-                                                ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-                                                : 'bg-secondary text-subtext border-border hover:border-primary/50 hover:bg-surface hover:text-maintext'
-                                                }`}
-                                        >
+                                        <option key={opt} value={opt} className="bg-secondary text-maintext">
                                             {opt}
-                                            {issueType === opt && <div className="w-2 h-2 rounded-full bg-white" />}
-                                        </button>
+                                        </option>
                                     ))}
-                                </div>
+                                </select>
                             </div>
 
                             <div>
