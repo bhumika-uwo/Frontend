@@ -203,10 +203,10 @@ const UserTransactions = () => {
                                 <div className="space-y-6">
                                     {/* Transaction ID & Date */}
                                     <div className="bg-secondary rounded-2xl p-6">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-xs font-bold text-subtext uppercase mb-2">{t('transactionsPage.detailsModal.id')}</p>
-                                                <p className="text-sm font-bold text-maintext">#{selectedTransaction.transactionId || selectedTransaction._id.substring(selectedTransaction._id.length - 12).toUpperCase()}</p>
+                                                <p className="text-sm font-bold text-maintext break-all">#{selectedTransaction.transactionId || selectedTransaction._id.substring(selectedTransaction._id.length - 12).toUpperCase()}</p>
                                             </div>
                                             <div>
                                                 <p className="text-xs font-bold text-subtext uppercase mb-2">{t('transactionsPage.detailsModal.date')}</p>
