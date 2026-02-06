@@ -718,7 +718,7 @@ const Profile = () => {
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card w-full max-w-md rounded-3xl p-6 border border-border shadow-2xl relative">
                         <button onClick={() => setShowPasswordModal(false)} className="absolute top-4 right-4 p-2 hover:bg-secondary rounded-full"><X className="w-5 h-5 text-subtext" /></button>
 
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between mb-6 mr-8">
                             <h2 className="text-xl font-bold text-maintext">{t('changePassword')}</h2>
                             {/* Single Toggle for All Password Fields */}
                             <button
