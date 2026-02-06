@@ -118,8 +118,8 @@ const Notifications = () => {
 
             <div className="grid gap-4 max-w-3xl">
                 {/* 1. Welcome Notification - ALWAYS SHOW IMMEDIATELY */}
-                <div className="bg-white p-6 rounded-2xl border border-primary/20 ring-1 ring-primary/5 shadow-sm flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-blue-50">
+                <div className="bg-card p-6 rounded-2xl border border-primary/20 ring-1 ring-primary/5 shadow-sm flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-blue-500/10">
                         <BadgeInfo className="w-6 h-6 text-blue-500" />
                     </div>
                     <div className="flex-1">
@@ -134,11 +134,11 @@ const Notifications = () => {
                 {notifications.map((notif) => (
                     <div
                         key={notif._id}
-                        className={`bg-white p-5 rounded-2xl border transition-all flex items-start gap-4 shadow-sm hover:shadow-md ${!notif.isRead ? 'border-primary/30 ring-1 ring-primary/5' : 'border-border'
+                        className={`bg-card p-5 rounded-2xl border transition-all flex items-start gap-4 shadow-sm hover:shadow-md ${!notif.isRead ? 'border-primary/30 ring-1 ring-primary/5' : 'border-border'
                             }`}
                     >
-                        <div className={`p-3 rounded-xl ${notif.type === 'ALERT' ? 'bg-red-50' :
-                            notif.type === 'SUCCESS' ? 'bg-green-50' : 'bg-blue-50'
+                        <div className={`p-3 rounded-xl ${notif.type === 'ALERT' ? 'bg-red-500/10' :
+                            notif.type === 'SUCCESS' ? 'bg-green-500/10' : 'bg-blue-500/10'
                             }`}>
                             {getIcon(notif.type)}
                         </div>
@@ -149,13 +149,13 @@ const Notifications = () => {
                                     {translateContent(notif.title)}
                                 </h3>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-subtext flex items-center gap-1 bg-surface px-2 py-1 rounded-full">
+                                    <span className="text-[10px] text-subtext flex items-center gap-1 bg-surface px-2 py-1 rounded-full border border-border">
                                         <Clock className="w-3 h-3" />
                                         {new Date(notif.createdAt).toLocaleDateString()}
                                     </span>
                                     <button
                                         onClick={() => deleteNotification(notif._id)}
-                                        className="p-1.5 hover:bg-red-50 text-subtext hover:text-red-500 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                        className="p-1.5 hover:bg-red-500/10 text-subtext hover:text-red-500 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
                                         title={t("notificationsPage.delete")}
                                     >
                                         <Trash2 className="w-4 h-4" />
