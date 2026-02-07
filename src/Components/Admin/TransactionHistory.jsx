@@ -39,6 +39,23 @@ const TransactionHistory = () => {
         setShowDetailsModal(true);
     };
 
+    const getStatusLabel = (status) => {
+        if (!status) return 'UNKNOWN';
+        const s = status.toLowerCase();
+        if (s === 'captured' || s === 'succeeded' || s === 'success') return 'SUCCESS';
+        if (s === 'created' || s === 'pending') return 'PENDING';
+        if (s === 'failed') return 'FAILED';
+        return status.toUpperCase();
+    };
+
+    const getStatusColor = (status) => {
+        const s = status?.toLowerCase();
+        if (s === 'captured' || s === 'succeeded' || s === 'success') return 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20';
+        if (s === 'created' || s === 'pending') return 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20';
+        if (s === 'failed') return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+        return 'bg-secondary text-subtext border-border';
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -71,7 +88,7 @@ const TransactionHistory = () => {
                                 <th className="px-4 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest w-[140px]">{t("admin.finance.type")}</th>
                                 <th className="px-4 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest">{t("admin.users.tableAgents")} / {t("admin.finance.details")}</th>
                                 <th className="px-4 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-right w-[120px]">{t("admin.finance.amount")}</th>
-                                <th className="px-4 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-center w-[140px]">{t("admin.finance.status")}</th>
+                                <th className="px-4 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-center w-[160px]">{t("admin.finance.status")}</th>
                                 <th className="px-4 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-right w-[100px]">{t("admin.finance.actions")}</th>
                             </tr>
                         </thead>
@@ -107,9 +124,9 @@ const TransactionHistory = () => {
                                             <span className="text-sm font-black text-maintext">₹{transaction.amount.toFixed(2)}</span>
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full border border-green-500/20 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
-                                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                                                {transaction.status}
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${getStatusColor(transaction.status)}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${transaction.status?.toLowerCase() === 'failed' ? 'bg-red-500' : (transaction.status?.toLowerCase() === 'pending' ? 'bg-yellow-500' : 'bg-green-500')}`} />
+                                                {getStatusLabel(transaction.status)}
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-right">
