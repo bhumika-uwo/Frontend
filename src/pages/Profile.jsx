@@ -146,14 +146,15 @@ const Profile = () => {
 
         const loadingToast = toast.loading(t('profilePage.deletingAccount'));
         try {
-            if (!user?.id || !user?.token) {
-                toast.error(t('failedToUpdate'));
+            const token = user?.token || localStorage.getItem('token');
+            if (!user?.id || !token) {
+                toast.error(t('profilePage.failedToUpdate'));
                 toast.dismiss(loadingToast);
                 return;
             }
 
             await axios.delete(`${apis.user}/${user.id}`, {
-                headers: { 'Authorization': `Bearer ${user.token}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             toast.dismiss(loadingToast);
@@ -187,9 +188,10 @@ const Profile = () => {
             const updatedUser = { ...user, name: editForm.name };
 
             // 1. Update Backend
-            if (user?.token) {
+            const token = user?.token || localStorage.getItem('token');
+            if (token) {
                 await axios.put(apis.user, { name: editForm.name }, {
-                    headers: { 'Authorization': `Bearer ${user.token}` }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
             }
 
@@ -225,19 +227,20 @@ const Profile = () => {
 
         // Validate file type
         if (!file.type.startsWith('image/')) {
-            toast.error(t('invalidFile'));
+            toast.error(t('profilePage.invalidFile'));
             return;
         }
 
         // Validate file size (50MB)
         if (file.size > 50 * 1024 * 1024) {
-            toast.error(t('fileTooLarge'));
+            toast.error(t('profilePage.fileTooLarge'));
             return;
         }
 
         // Check if user is logged in and has a valid token
-        if (!user || !user.token) {
-            toast.error(t('loginRequired'));
+        const token = user?.token || localStorage.getItem('token');
+        if (!user || !token) {
+            toast.error(t('profilePage.loginRequired'));
             navigate(AppRoute.LOGIN);
             return;
         }
@@ -253,7 +256,7 @@ const Profile = () => {
 
             const response = await axios.put(apis.uploadAvatar, formData, {
                 headers: {
-                    'Authorization': `Bearer ${user.token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 }
             });
@@ -293,7 +296,7 @@ const Profile = () => {
             } else if (error.response?.status === 400) {
                 toast.error(error.response?.data?.error || "Invalid file format");
             } else {
-                toast.error(error.response?.data?.error || t('failedToUpdate'));
+                toast.error(error.response?.data?.error || t('profilePage.failedToUpdate'));
             }
         } finally {
             setIsUploadingAvatar(false);
