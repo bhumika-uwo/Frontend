@@ -405,123 +405,109 @@ const Profile = () => {
         <div className="h-full flex flex-col bg-secondary p-4 md:p-8 overflow-y-auto custom-scrollbar">
             <div className="max-w-4xl mx-auto w-full space-y-8 pb-12">
 
-                {/* Profile Header */}
-                <div className="flex flex-col md:flex-row items-center gap-6 bg-card border border-border p-5 md:p-8 rounded-2xl md:rounded-[32px] shadow-sm relative overflow-hidden">
-                    {/* Avatar with Upload Button */}
-                    <div className="relative">
-                        <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary border-2 border-primary/20 shadow-inner overflow-hidden text-3xl font-bold">
-                            {user.avatar ? (
-                                <img
-                                    src={user.avatar}
-                                    alt="Profile"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.parentElement.innerText = user.name ? user.name.charAt(0).toUpperCase() : "U";
-                                    }}
-                                />
-                            ) : (
-                                user.name ? user.name.charAt(0).toUpperCase() : <CircleUser className="w-12 h-12" />
-                            )}
-                        </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                        {/* Camera Icon Upload Button */}
-                        <button
-                            onClick={() => avatarInputRef.current?.click()}
-                            disabled={isUploadingAvatar}
-                            className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white dark:bg-gray-200 hover:bg-gray-100 dark:hover:bg-gray-300 flex items-center justify-center shadow-lg border-2 border-border transition-all disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Upload profile picture"
-                        >
-                            {isUploadingAvatar ? (
-                                <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                                <Camera className="w-4 h-4 text-gray-700" />
-                            )}
-                        </button>
+                    {/* Left Column: Identity & Profile */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-card border border-border p-6 rounded-[32px] shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+                            <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
 
-                        {/* Hidden File Input */}
-                        <input
-                            ref={avatarInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleAvatarUpload}
-                            className="hidden"
-                        />
-                    </div>
-
-                    <div className="text-center md:text-left space-y-1 flex-1">
-                        {isEditing ? (
-                            <div className="space-y-3 max-w-md">
-                                <input
-                                    type="text"
-                                    value={editForm.name}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full text-2xl font-bold bg-secondary/50 border border-border rounded-xl px-4 py-2 focus:outline-none focus:border-primary text-maintext"
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={handleSaveProfile} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold flex items-center gap-2">
-                                        <Check className="w-4 h-4" /> {t('save')}
-                                    </button>
-                                    <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-surface text-maintext border border-border rounded-lg text-sm font-bold flex items-center gap-2">
-                                        <X className="w-4 h-4" /> {t('cancel')}
-                                    </button>
+                            {/* Avatar */}
+                            <div className="relative mb-4 mt-4">
+                                <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center text-primary border-4 border-card shadow-xl overflow-hidden text-4xl font-bold">
+                                    {user.avatar ? (
+                                        <img
+                                            src={user.avatar}
+                                            alt="Profile"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.parentElement.innerText = user.name ? user.name.charAt(0).toUpperCase() : "U";
+                                            }}
+                                        />
+                                    ) : (
+                                        user.name ? user.name.charAt(0).toUpperCase() : <CircleUser className="w-16 h-16" />
+                                    )}
                                 </div>
+                                <button
+                                    onClick={() => avatarInputRef.current?.click()}
+                                    disabled={isUploadingAvatar}
+                                    className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center shadow-lg border-2 border-border transition-all disabled:cursor-not-allowed"
+                                >
+                                    {isUploadingAvatar ? (
+                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <Camera className="w-5 h-5 text-primary" />
+                                    )}
+                                </button>
+                                <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                             </div>
-                        ) : (
-                            <div className="group relative inline-block">
-                                <div className="flex items-center gap-3">
-                                    <h1 className="text-3xl font-black text-maintext">{user.name}</h1>
-                                    <button onClick={() => setIsEditing(true)} className="p-1.5 text-subtext hover:text-primary hover:bg-primary/10 rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                                        <Pencil className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <p className="text-subtext font-medium">{user.email}</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
 
-                {/* Account Overview */}
-                <div className="bg-card border border-border p-5 md:p-6 rounded-2xl md:rounded-[32px] shadow-sm">
-                    <h2 className="text-lg font-bold text-maintext mb-6 flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-primary" />
-                        {t('accountOverview')}
-                    </h2>
-                    <div className="grid grid-cols-1 gap-6">
-                        {/* Account Type */}
-                        <div className="flex items-center gap-4 p-5 bg-gradient-to-br from-blue-500/5 to-blue-500/10 rounded-2xl border border-blue-500/10 hover:border-blue-500/20 transition-all">
-                            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500/10 shadow-inner">
-                                <Crown className="w-6 h-6 text-blue-600" />
+                            {/* Name & Email */}
+                            <div className="w-full">
+                                {isEditing ? (
+                                    <div className="space-y-3 w-full">
+                                        <input
+                                            type="text"
+                                            value={editForm.name}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                                            className="w-full text-center text-xl font-bold bg-secondary/50 border border-border rounded-xl px-4 py-2 focus:outline-none focus:border-primary text-maintext"
+                                        />
+                                        <div className="flex justify-center gap-2">
+                                            <button onClick={handleSaveProfile} className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold flex items-center gap-2">
+                                                <Check className="w-3 h-3" /> {t('save')}
+                                            </button>
+                                            <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-surface text-maintext border border-border rounded-lg text-xs font-bold flex items-center gap-2">
+                                                <X className="w-3 h-3" /> {t('cancel')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="group relative inline-block text-center w-full">
+                                        <h1 className="text-2xl font-black text-maintext flex items-center justify-center gap-2">
+                                            {user.name}
+                                            <button onClick={() => setIsEditing(true)} className="p-1 text-subtext hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                        </h1>
+                                        <p className="text-subtext font-medium text-sm">{user.email}</p>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex-1">
-                                <p className="text-xs font-semibold text-subtext uppercase tracking-wide mb-1">{t('accountType')}</p>
-                                <p className="text-base font-bold text-maintext capitalize">
-                                    {(user.role?.toLowerCase() === 'admin') ? t('adminRole') : (user.role?.toLowerCase() === 'developer') ? t('developerRole') : t('userRole')}
-                                </p>
+
+                            {/* Role Badge - Merged from Account Overview */}
+                            <div className="mt-6 w-full pt-6 border-t border-border/50">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-600 rounded-full border border-blue-500/20">
+                                    <Crown className="w-4 h-4" />
+                                    <span className="text-sm font-bold uppercase tracking-wide">
+                                        {(user.role?.toLowerCase() === 'admin') ? t('adminRole') : (user.role?.toLowerCase() === 'developer') ? t('developerRole') : t('userRole')}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Account Details & Settings */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-                    <div className="bg-card border border-border rounded-2xl md:rounded-[32px] p-5 md:p-8 space-y-8">
-                        <div className="space-y-6">
-                            <h2 className="text-xl font-bold text-maintext flex items-center gap-2"><Settings className="w-5 h-5 text-primary" />{t('accountPreferences')}</h2>
-                            <div className="space-y-4">
+                    {/* Right Column: Settings Panel */}
+                    <div className="lg:col-span-8 space-y-6">
+
+                        {/* 1. Account Preferences */}
+                        <div className="bg-card border border-border rounded-[32px] p-8">
+                            <h2 className="text-lg font-bold text-maintext mb-6 flex items-center gap-2">
+                                <Settings className="w-5 h-5 text-primary" />
+                                {t('accountPreferences')}
+                            </h2>
+                            <div className="space-y-2">
                                 {preferenceItems.map((item) => (
                                     <div key={item.key} className={`relative ${activeSection === item.key ? 'z-20' : 'z-0'}`}>
-                                        <div onClick={() => handlePreferenceClick(item.key)} className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 hover:bg-secondary/30 px-2 rounded-lg transition-colors cursor-pointer group">
-                                            <span className="text-sm font-medium text-subtext">{item.label}</span>
-                                            <div className="flex items-center gap-2">
+                                        <div onClick={() => handlePreferenceClick(item.key)} className="flex justify-between items-center py-4 px-4 bg-secondary/30 border border-transparent hover:border-border/50 hover:bg-secondary/50 rounded-xl transition-all cursor-pointer group">
+                                            <span className="text-sm font-semibold text-subtext group-hover:text-maintext transition-colors">{item.label}</span>
+                                            <div className="flex items-center gap-3">
                                                 <span className="text-sm font-bold text-maintext">{item.value}</span>
-                                                <ChevronRight className={`w-4 h-4 text-subtext group-hover:text-primary transition-colors ${activeSection === item.key ? 'rotate-90' : ''}`} />
+                                                <ChevronRight className={`w-4 h-4 text-subtext group-hover:text-primary transition-all ${activeSection === item.key ? 'rotate-90' : ''}`} />
                                             </div>
                                         </div>
 
-
-
-                                        {/* Theme Dropdown */}
+                                        {/* Dropdowns (Logic preserved) */}
                                         {item.key === 'theme' && activeSection === 'theme' && (
                                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="absolute z-50 top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
                                                 {['light', 'dark'].map(mode => (
@@ -533,7 +519,6 @@ const Profile = () => {
                                             </motion.div>
                                         )}
 
-                                        {/* Timezone Dropdown */}
                                         {item.key === 'timezone' && activeSection === 'timezone' && (
                                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="absolute z-50 top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden min-w-[300px]">
                                                 <div className="p-3 bg-secondary/30 border-b border-border">
@@ -559,7 +544,6 @@ const Profile = () => {
                                             </motion.div>
                                         )}
 
-                                        {/* Currency Dropdown */}
                                         {item.key === 'currency' && activeSection === 'currency' && (
                                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="absolute z-50 top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
                                                 <div className="p-3 bg-secondary/30 border-b border-border">
@@ -589,35 +573,40 @@ const Profile = () => {
                             </div>
                         </div>
 
-
-                    </div>
-
-                    {/* Security Column */}
-                    <div className="bg-card border border-border rounded-[32px] p-8 h-fit space-y-8">
-                        <div className="space-y-6">
-                            <h2 className="text-xl font-bold text-maintext flex items-center gap-2"><Lock className="w-5 h-5 text-blue-500" />{t('securityStatus')}</h2>
-                            <div className="space-y-4">
-                                <button onClick={() => setShowPasswordModal(true)} className="w-full p-4 bg-secondary/50 rounded-2xl border border-border hover:bg-secondary transition-colors text-left group">
-                                    <p className="text-xs text-subtext mb-1">{t('password')}</p>
-                                    <div className="flex justify-between items-center"><span className="text-sm font-bold text-maintext">{t('changePassword')}</span><ChevronRight className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" /></div>
+                        {/* 2. Security & Billing */}
+                        <div className="bg-card border border-border rounded-[32px] p-8">
+                            <h2 className="text-lg font-bold text-maintext mb-6 flex items-center gap-2">
+                                <Shield className="w-5 h-5 text-primary" />
+                                {t('securityStatus')}
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button onClick={() => setShowPasswordModal(true)} className="p-5 bg-secondary/30 rounded-2xl border border-transparent hover:border-border/50 hover:bg-secondary/50 transition-all text-left group">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Lock className="w-5 h-5 text-subtext group-hover:text-primary transition-colors" />
+                                        <ChevronRight className="w-4 h-4 text-subtext/50 group-hover:text-primary transition-colors" />
+                                    </div>
+                                    <p className="text-sm font-bold text-maintext">{t('changePassword')}</p>
+                                    <p className="text-xs text-subtext mt-1">{t('passwordLastChanged') || "Update your password"}</p>
                                 </button>
 
-                                <button onClick={() => navigate(AppRoute.USER_TRANSACTIONS)} className="w-full p-4 bg-secondary/50 rounded-2xl border border-border hover:bg-secondary transition-colors text-left group">
-                                    <p className="text-xs text-subtext mb-1">{t('billingPayments')}</p>
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="w-4 h-4 text-primary" />
-                                            <span className="text-sm font-bold text-maintext">{t('transactions')}</span>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                                <button onClick={() => navigate(AppRoute.USER_TRANSACTIONS)} className="p-5 bg-secondary/30 rounded-2xl border border-transparent hover:border-border/50 hover:bg-secondary/50 transition-all text-left group">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <FileText className="w-5 h-5 text-subtext group-hover:text-primary transition-colors" />
+                                        <ChevronRight className="w-4 h-4 text-subtext/50 group-hover:text-primary transition-colors" />
                                     </div>
+                                    <p className="text-sm font-bold text-maintext">{t('transactions')}</p>
+                                    <p className="text-xs text-subtext mt-1">View billing history</p>
+                                </button>
+                            </div>
+
+                            <div className="mt-8 pt-6 border-t border-border/50">
+                                <button onClick={handleDeleteAccount} className="flex items-center gap-2 text-red-500 hover:text-red-600 transition-colors text-sm font-bold">
+                                    <Trash2 className="w-4 h-4" />
+                                    {t('deleteAccount')}
                                 </button>
                             </div>
                         </div>
 
-                        <div className="space-y-3 pt-8">
-                            <button onClick={handleDeleteAccount} className="w-full py-3 bg-red-500/5 text-red-600 border border-red-500/10 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" />{t('deleteAccount')}</button>
-                        </div>
                     </div>
                 </div>
             </div>
