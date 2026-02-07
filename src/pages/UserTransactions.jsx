@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Loader2, Eye, X, Calendar, Receipt } from 'lucide-react';
+import { Clock, Loader2, Eye, X, Calendar, Receipt, Download } from 'lucide-react';
+import { jsPDF } from "jspdf";
 import axios from 'axios';
 import { API } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -44,6 +45,73 @@ const UserTransactions = () => {
     const handleViewDetails = (transaction) => {
         setSelectedTransaction(transaction);
         setShowDetailsModal(true);
+    };
+
+    const handleDownloadInvoice = () => {
+        if (!selectedTransaction) return;
+
+        const doc = new jsPDF();
+
+        // 1. Header
+        doc.setFontSize(22);
+        doc.setTextColor(40, 40, 40);
+        doc.text("A-Series Invoice", 20, 25);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 32);
+
+        // 2. Transaction Details Box
+        doc.setDrawColor(220, 220, 220);
+        doc.setFillColor(250, 250, 250);
+        doc.roundedRect(20, 40, 170, 35, 3, 3, 'FD');
+
+        doc.setFontSize(10);
+        doc.setTextColor(120, 120, 120);
+        doc.text("TRANSACTION ID", 30, 52);
+        doc.text("DATE", 120, 52);
+
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`#${selectedTransaction.transactionId || selectedTransaction._id}`, 30, 60);
+        doc.text(new Date(selectedTransaction.createdAt).toLocaleDateString(), 120, 60);
+
+        // 3. Line Items Header
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text("ITEM", 20, 95);
+        doc.text("PLAN", 100, 95);
+        doc.text("AMOUNT", 160, 95);
+
+        doc.setDrawColor(230, 230, 230);
+        doc.line(20, 100, 190, 100);
+
+        // 4. Item Details
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+        doc.text(selectedTransaction.agentId?.agentName || 'Unknown App', 20, 110);
+        doc.text(selectedTransaction.plan || 'Standard', 100, 110);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${(selectedTransaction.amount).toFixed(2)}`, 160, 110);
+
+        // 5. Total
+        doc.setDrawColor(230, 230, 230);
+        doc.line(20, 120, 190, 120);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("Total Paid:", 120, 135);
+        doc.setTextColor(0, 128, 0); // Green
+        doc.text(`${(selectedTransaction.amount).toFixed(2)}`, 160, 135);
+
+        // 6. Footer
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Thank you for your business!", 105, 180, { align: "center" });
+        doc.text("A-Series Inc.", 105, 185, { align: "center" });
+
+        doc.save(`invoice_${selectedTransaction._id}.pdf`);
     };
 
     return (
@@ -251,7 +319,14 @@ const UserTransactions = () => {
                                     </div>
                                 </div>
 
-                                <div className="mt-8 flex justify-end">
+                                <div className="mt-8 flex justify-end gap-3">
+                                    <button
+                                        onClick={handleDownloadInvoice}
+                                        className="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-maintext rounded-xl text-sm font-bold hover:bg-border transition-all border border-border"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        {t('invoicesPage.download')}
+                                    </button>
                                     <button
                                         onClick={() => setShowDetailsModal(false)}
                                         className="px-6 py-3 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all"
@@ -264,7 +339,7 @@ const UserTransactions = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
