@@ -83,13 +83,13 @@ const TransactionHistory = () => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-secondary/50 border-b border-border">
                             <tr>
-                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest whitespace-nowrap">{t("admin.finance.id")}</th>
-                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest whitespace-nowrap">{t("admin.finance.date")}</th>
-                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest whitespace-nowrap">{t("admin.finance.type")}</th>
-                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest w-full">{t("admin.users.tableAgents")} / {t("admin.finance.details")}</th>
-                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-right whitespace-nowrap">{t("admin.finance.amount")}</th>
-                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-center whitespace-nowrap">{t("admin.finance.status")}</th>
-                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-right whitespace-nowrap">{t("admin.finance.actions")}</th>
+                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest whitespace-nowrap w-[12%]">{t("admin.finance.id")}</th>
+                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest whitespace-nowrap w-[12%]">{t("admin.finance.date")}</th>
+                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest whitespace-nowrap w-[14%]">{t("admin.finance.type")}</th>
+                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest w-[24%]">{t("admin.users.tableAgents")} / {t("admin.finance.details")}</th>
+                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-right whitespace-nowrap w-[14%]">{t("admin.finance.amount")}</th>
+                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-center whitespace-nowrap w-[16%]">{t("admin.finance.status")}</th>
+                                <th className="px-3 py-3 text-[10px] font-bold text-subtext uppercase tracking-widest text-right whitespace-nowrap w-[8%]">{t("admin.finance.actions")}</th>
                             </tr>
                         </thead>
                         <tbody>
