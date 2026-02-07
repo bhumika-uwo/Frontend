@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useLanguage } from "../context/LanguageContext";
+import { useTheme } from "../context/ThemeContext";
 import {
   Activity,
   Users,
@@ -15,7 +16,9 @@ import {
   ChevronUp,
   FileText,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from "lucide-react";
 
 // Sub-Components
@@ -35,6 +38,7 @@ import { ArrowLeft } from "lucide-react";
 
 const Admin = () => {
   const { t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [activeSubTab, setActiveSubTab] = useState("overview");
@@ -218,7 +222,13 @@ const Admin = () => {
           </div>
 
           <div className="flex items-center gap-6">
-
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors text-subtext hover:text-primary"
+              title={theme === 'dark' ? t('lightMode') : t('darkMode')}
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
 
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
