@@ -88,7 +88,7 @@ const AdminOverview = () => {
             <div className="bg-card border border-border rounded-2xl md:rounded-3xl p-5 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm gap-6">
                 <div className="flex items-center gap-4 md:gap-8">
                     <div>
-                        <h2 className="text-lg md:text-2xl font-bold text-gray-800">{t("admin.overview.systemsOperational")}</h2>
+                        <h2 className="text-lg md:text-2xl font-bold text-maintext">{t("admin.overview.systemsOperational")}</h2>
                         <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 md:mt-2">
                             <span className="px-2 md:px-3 py-0.5 md:py-1 bg-secondary text-subtext rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider">{t("admin.overview.systemReady")}</span>
                             <div className="hidden md:block w-1 h-1 bg-border rounded-full" />
@@ -103,9 +103,9 @@ const AdminOverview = () => {
                 <div className="flex items-center gap-6 md:gap-12 md:border-l md:border-border md:pl-12 w-full md:w-auto">
                     <div className="flex items-center gap-3">
                         <div>
-                            <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t("admin.overview.security")}</p>
+                            <p className="text-[9px] md:text-[10px] text-subtext font-bold uppercase tracking-wider">{t("admin.overview.security")}</p>
                             <div className="flex items-center gap-2">
-                                <p className="text-xs md:text-sm font-bold text-gray-800">{t("admin.overview.systemSecure")}</p>
+                                <p className="text-xs md:text-sm font-bold text-maintext">{t("admin.overview.systemSecure")}</p>
                             </div>
                         </div>
                     </div>
@@ -139,34 +139,34 @@ const AdminOverview = () => {
 
                 <div className="bg-card border border-border rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
                     <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-2 text-blue-600 font-extrabold text-sm tracking-widest">
+                        <div className="flex items-center gap-2 text-primary font-extrabold text-sm tracking-widest">
                             {t("admin.overview.financialOverview").toUpperCase()}
                         </div>
                         <div className="flex items-center gap-4">
-                            <button className="text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1 hover:underline group">
+                            <button className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-1 hover:underline group">
                                 {t("admin.overview.invoice")}
                             </button>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl transition-all hover:bg-white hover:shadow-md group">
-                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-2 transition-colors group-hover:text-blue-600">{t("admin.overview.grossSales")}</p>
-                            <h4 className="text-3xl font-extrabold text-gray-800 tracking-tight">₹{(statsData?.financials?.grossSales || 0).toLocaleString()}</h4>
+                        <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl transition-all hover:bg-card hover:border-primary/30 hover:shadow-md group">
+                            <p className="text-[10px] text-primary font-bold uppercase tracking-wider mb-2 transition-colors">{t("admin.overview.grossSales")}</p>
+                            <h4 className="text-3xl font-extrabold text-maintext tracking-tight">₹{(statsData?.financials?.grossSales || 0).toLocaleString()}</h4>
                         </div>
-                        <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl transition-all hover:bg-white hover:shadow-md group">
-                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-2 transition-colors group-hover:text-blue-600">{t("admin.overview.platformFee")}</p>
-                            <h4 className="text-3xl font-extrabold text-gray-800 tracking-tight">₹{(statsData?.financials?.platformFee || 0).toLocaleString()}</h4>
+                        <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl transition-all hover:bg-card hover:border-primary/30 hover:shadow-md group">
+                            <p className="text-[10px] text-primary font-bold uppercase tracking-wider mb-2 transition-colors">{t("admin.overview.platformFee")}</p>
+                            <h4 className="text-3xl font-extrabold text-maintext tracking-tight">₹{(statsData?.financials?.platformFee || 0).toLocaleString()}</h4>
                         </div>
-                        <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl transition-all hover:bg-white hover:shadow-md group">
-                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-2 transition-colors group-hover:text-blue-600">{t("admin.overview.netEarnings")}</p>
-                            <h4 className="text-3xl font-extrabold text-gray-800 tracking-tight">₹{(statsData?.financials?.netEarnings || 0).toLocaleString()}</h4>
+                        <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl transition-all hover:bg-card hover:border-primary/30 hover:shadow-md group">
+                            <p className="text-[10px] text-primary font-bold uppercase tracking-wider mb-2 transition-colors">{t("admin.overview.netEarnings")}</p>
+                            <h4 className="text-3xl font-extrabold text-maintext tracking-tight">₹{(statsData?.financials?.netEarnings || 0).toLocaleString()}</h4>
                         </div>
                         <div className="p-6 flex flex-col justify-center">
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{t("admin.overview.status")}</p>
-                            <span className="w-fit px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-extrabold border border-blue-200 mb-3">{statsData?.financials?.status || t("admin.overview.active")}</span>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{t("admin.overview.nextPayout")}</p>
-                            <p className="text-sm font-bold text-gray-800">{statsData?.financials?.nextPayout || '15th Oct 2024'}</p>
+                            <p className="text-[10px] text-subtext font-bold uppercase tracking-wider mb-1">{t("admin.overview.status")}</p>
+                            <span className="w-fit px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-extrabold border border-primary/20 mb-3">{statsData?.financials?.status || t("admin.overview.active")}</span>
+                            <p className="text-[10px] text-subtext font-bold uppercase tracking-wider mb-1">{t("admin.overview.nextPayout")}</p>
+                            <p className="text-sm font-bold text-maintext">{statsData?.financials?.nextPayout || '15th Oct 2024'}</p>
                         </div>
                     </div>
                 </div>

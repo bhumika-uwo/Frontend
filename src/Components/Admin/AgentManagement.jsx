@@ -114,29 +114,29 @@ const AgentManagement = ({ onDetailView }) => {
             {/* Delete Confirmation Modal Overlay */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white border border-blue-500/10 rounded-2xl md:rounded-[32px] p-6 md:p-8 max-w-sm w-full shadow-2xl shadow-blue-500/10 animate-in zoom-in-95 duration-200">
+                    <div className="bg-card border border-primary/10 rounded-2xl md:rounded-[32px] p-6 md:p-8 max-w-sm w-full shadow-2xl shadow-primary/10 animate-in zoom-in-95 duration-200">
                         <div className="flex flex-col items-center text-center gap-4">
-                            <div className="w-16 h-16 bg-blue-500/10 rounded-3xl flex items-center justify-center mb-2 shadow-inner shadow-blue-500/20">
-                                <AlertCircle className="w-8 h-8 text-blue-500" />
+                            <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center mb-2 shadow-inner shadow-primary/20">
+                                <AlertCircle className="w-8 h-8 text-primary" />
                             </div>
 
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">{t("notificationsPage.delete")}?</h3>
-                                <p className="text-sm text-slate-600 leading-relaxed">
-                                    Are you sure you want to permanently delete <span className="text-slate-900 font-semibold">"{agentToDelete?.name}"</span>? This action cannot be undone.
+                                <h3 className="text-xl font-bold text-maintext mb-2">{t("notificationsPage.delete")}?</h3>
+                                <p className="text-sm text-subtext leading-relaxed">
+                                    Are you sure you want to permanently delete <span className="text-maintext font-semibold">"{agentToDelete?.name}"</span>? This action cannot be undone.
                                 </p>
                             </div>
 
                             <div className="flex items-center gap-3 w-full mt-2">
                                 <button
                                     onClick={() => setShowDeleteConfirm(false)}
-                                    className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-bold text-sm transition-colors"
+                                    className="flex-1 py-3 px-4 bg-secondary hover:bg-border text-subtext rounded-2xl font-bold text-sm transition-colors"
                                 >
                                     {t("chatPage.cancel")}
                                 </button>
                                 <button
                                     onClick={confirmDelete}
-                                    className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95"
+                                    className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-95"
                                 >
                                     {t("notificationsPage.delete")}
                                 </button>
