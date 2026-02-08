@@ -67,7 +67,12 @@ export const AppRoute = {
 const PROD_API = "https://a-series-backend-m1ls.onrender.com/api";
 const DEV_API = "http://localhost:8080/api";
 
-export const API = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? PROD_API : DEV_API);
+// Robust check: if we are on the live domain, FORCE the prod API
+const isLiveDomain = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
+
+export const API = isLiveDomain
+  ? PROD_API
+  : (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? PROD_API : DEV_API));
 
 export const apis = {
   emailVerificationApi: `${API}/email_varification`,
